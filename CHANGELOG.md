@@ -1,3 +1,11 @@
+# 1.0.1
+
+- README uitgebreid met installatie-instructies voor JG Mechanic en andere tuningmenu's.
+- Exacte JG-plaatkeuzes en GTA-plaatindices 0, 1 en 3 gedocumenteerd.
+- Geen mechanic-config meegeleverd; gebruikers passen hun eigen configuratie aan.
+- Scriptversie en version.json naar 1.0.1; configversie blijft 1.0.0.
+- Geen wijziging in textures of runtimegedrag.
+
 # 1.0.0
 
 - Scriptversie en configversie op 1.0.0 gezet.
