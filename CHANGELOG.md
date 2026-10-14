@@ -1,3 +1,20 @@
+# 1.0.2
+
+- Herzien voor publicatie, naar aanleiding van de in-game screenshots.
+- Moderne achtergronden met rustiger geel, duidelijkere donkere rand en beter zichtbare NL/EU-symbolen.
+- Nieuwe donkerblauwe oldtimerachtergrond.
+- Eigen gedeelde kentekenfonttexture: lagere en stevigere cijfers/letters.
+- Bijpassende normal map; L8-font in een afzonderlijke gestreamde YTD.
+- Begrensde laadtijd, standaardfont bij timeout en opruimen bij stoppen.
+- Lokaal debugcommando /nlplaatfont aan|uit|status via bestaande debugoptie.
+- Oldtimer op build 3095+: donkerblauwe achtergrond op index 6 met witte GTA-letters (#FEFEFE).
+- Bestaande oldtimerindices 1/2 worden door de voertuigbeheerder naar 6 omgezet.
+- Mechanic-keuze voor oldtimer moet nu index 6 zijn; README aangepast.
+- Kentekennummers en voertuigmodellen blijven ongewijzigd; geen SQL-migratie.
+- Exacte crème-tint niet instelbaar. Oudere builds houden geel met een melding.
+- Configversie blijft 1.0.0; geen configwijzigingen.
+- Textures lokaal bekeken, ook op klein formaat. In-game resultaat nog te testen.
+
 # 1.0.1
 
 - README uitgebreid met installatie-instructies voor JG Mechanic en andere tuningmenu's.
