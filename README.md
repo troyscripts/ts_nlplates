@@ -1,7 +1,7 @@
 # Troy Scripts — ts_nlplates 1.0.5
 
 Nederlandse kentekens en toonbare kentekenbewijzen voor ESX/ox_inventory.
-Configversie: 1.0.2.
+Configversie: 1.0.3.
 
 ## Benodigd
 
@@ -102,7 +102,7 @@ Pas de keuzelijst in je eigen mechanic-resource aan; daarvan bestaat geen univer
 
 - /kentekenpunt: plaatsen of verplaatsen op je huidige positie.
 - /kentekenpunt verwijder: verwijderen.
-- Beide vereisen de ACE-permissie admin; locatie wordt in SQL bewaard.
+- Beide vereisen de frameworkgroep admin, owner, superadmin of god; locatie wordt in SQL bewaard.
 - Prijs via Config.Replacement.price, betaalrekening via account.
 - Opbrengst gaat naar Config.Replacement.society, standaard society_police.
 - Vervangen wijzigt het documentnummer, niet het voertuigkenteken.

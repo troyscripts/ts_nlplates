@@ -1,5 +1,5 @@
 Config = {}
-Config.Version = '1.0.2'
+Config.Version = '1.0.3'
 
 -- Een controle bij starten; handmatig vanuit console: ts_nlplates_check
 Config.VersionCheck = true
@@ -46,7 +46,7 @@ Config.Replacement = {
     account = 'bank', -- ESX account: bank of money
     society = 'society_police', -- ontvangt de kosten van een nieuwe kaart
     placeCommand = 'kentekenpunt',
-    adminAce = 'admin',
+    adminGroups = { admin = true, owner = true, superadmin = true, god = true },
     interactDistance = 2.0,
     serverDistance = 3.0,
     label = 'Kentekenloket',

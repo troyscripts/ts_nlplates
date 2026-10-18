@@ -2,7 +2,7 @@
 
 - ts_bridge 1.0.1 als centrale koppeling voor framework, inventory, eigendom, garages, sleutels en betalingen.
 - Blijvende betaalmarkering bij onzekere uitkomst; geen automatische herhaling.
-- Configschema blijft 1.0.2; bestaande loketprijs, ACE admin en kaartrevisies blijven behouden.
+- Configschema is nu 1.0.3; bestaande loketprijs, ACE admin en kaartrevisies blijven behouden.
 - Zie ../VERWIJDERD.md voor verwijderde/verplaatste koppelingen.
 
 # 1.0.4

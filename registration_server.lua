@@ -325,8 +325,8 @@ lib.callback.register('ts_nlplates:counter:get', function() return counter end)
 
 RegisterCommand(Config.Replacement.placeCommand, function(src, args)
     if src == 0 then return print('[ts_nlplates] Gebruik dit commando ingame.') end
-    if not IsPlayerAceAllowed(src, Config.Replacement.adminAce) then
-        return notify(src, 'Geen toegang: ACE admin vereist.', 'error')
+    if not bridge:HasPermission(src, {groups = Config.Replacement.adminGroups}) then
+        return notify(src, 'Geen toegang: admin, owner, superadmin of god vereist.', 'error')
     end
     if not ready then return notify(src, 'Registratie is nog niet gereed.', 'error') end
     if GetPlayerRoutingBucket(src) ~= 0 then return notify(src, 'Plaats het loket in de normale wereld.', 'error') end
