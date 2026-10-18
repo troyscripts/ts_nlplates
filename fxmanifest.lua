@@ -2,10 +2,12 @@ fx_version 'cerulean'
 game 'gta5'
 
 author 'Troy Scripts'
-description 'Nederlandse plaatachtergronden en kentekenfont met behoud van voertuigkentekens'
-version '1.0.2'
+description 'Nederlandse kentekens en toonbaar kentekenbewijs voor ESX / ox_inventory'
+version '1.0.3'
 
-shared_script 'config.lua'
-client_script 'client.lua'
-server_script 'server.lua'
-files { 'textures/*.png' }
+shared_scripts { '@ox_lib/init.lua', 'config.lua', 'plate_format.lua' }
+client_scripts { 'client.lua', 'registration_client.lua' }
+server_scripts { '@oxmysql/lib/MySQL.lua', 'server.lua', 'registration_server.lua' }
+ui_page 'html/index.html'
+files { 'textures/*.png', 'html/index.html', 'html/style.css', 'html/app.js' }
+dependencies { '/onesync', 'ox_lib', 'oxmysql', 'ox_inventory', 'es_extended' }

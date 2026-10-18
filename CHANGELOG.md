@@ -1,3 +1,12 @@
+# 1.0.3
+- Instelbare serverzijdige kentekengenerator (standaard A-111-AA).
+- Centrale nummerreservering voor JG-aankopen en nieuw NPC-verkeer.
+- Eenmalig kentekenbewijs in ox_inventory-dashboardkastjes.
+- Kaartweergave, meenemen, bekijken en tonen aan nabije spelers.
+- Servercontrole op toegang, bezit en afstand; actuele ESX-eigenaar.
+- Nieuwe dependencies en installatiehandleiding; configversie 1.0.1.
+- Bestaande spelerskentekens en sleutelitems worden niet gemigreerd.
+
 # 1.0.2
 
 - Herzien voor publicatie, naar aanleiding van de in-game screenshots.
