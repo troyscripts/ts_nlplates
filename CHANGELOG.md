@@ -1,3 +1,12 @@
+# 1.0.4
+- JG-compatibele kentekens met spaties; streepjes worden niet meer gegenereerd.
+- Offline migratiehulp voor reeds opgeslagen 1.0.3-kentekens.
+- Kentekenloket plaatsen/verwijderen via ACE admin en persistent opgeslagen locatie.
+- Vervangingsprijs en betaalrekening via config; opbrengst naar society_police.
+- Uniek documentnummer bij vervanging; oude kaarten rood NIETIG VERKLAARD.
+- Bedrijfslabel voor opgeslagen jobvoertuigen en gevalideerde JG-jobgarage-spawners.
+- Configversie 1.0.2.
+
 # 1.0.3
 - Instelbare serverzijdige kentekengenerator (standaard A-111-AA).
 - Centrale nummerreservering voor JG-aankopen en nieuw NPC-verkeer.

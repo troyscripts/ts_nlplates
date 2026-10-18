@@ -91,3 +91,73 @@ end)
 AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() then closeCard() end
 end)
+
+-- JG geeft geen bedrijfsnaam aan ons door. De server controleert zelf zijn garageconfig.
+AddEventHandler('jg-advancedgarages:client:TakeOutVehicle:config', function(vehicle, _, garageType)
+    if garageType ~= 'job' or not DoesEntityExist(vehicle) then return end
+    local netId = NetworkGetNetworkIdFromEntity(vehicle)
+    SetTimeout(1000, function()
+        if DoesEntityExist(vehicle) then TriggerServerEvent('ts_nlplates:business:register', netId) end
+    end)
+end)
+
+
+if Config.Replacement.enabled then
+    local counter, blip, prompt, applying
+    local function updateCounter(data)
+        if blip then RemoveBlip(blip); blip = nil end
+        counter = type(data) == 'table' and data or nil
+        if prompt then lib.hideTextUI(); prompt = false end
+        if counter and Config.Replacement.blip then
+            blip = AddBlipForCoord(counter.x, counter.y, counter.z)
+            SetBlipSprite(blip, 525)
+            SetBlipColour(blip, 2)
+            SetBlipScale(blip, 0.75)
+            SetBlipAsShortRange(blip, true)
+            BeginTextCommandSetBlipName('STRING')
+            AddTextComponentString(Config.Replacement.label)
+            EndTextCommandSetBlipName(blip)
+        end
+    end
+    RegisterNetEvent('ts_nlplates:counter:update', updateCounter)
+    CreateThread(function()
+        updateCounter(lib.callback.await('ts_nlplates:counter:get', false))
+        while true do
+            local c = counter
+            local distance = c and #(GetEntityCoords(PlayerPedId()) - vector3(c.x, c.y, c.z)) or 9999
+            if c and distance < 20 then
+                DrawMarker(1, c.x, c.y, c.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.8, 0.8, 0.2, 65, 175, 115, 160, false, false, 2, false, nil, nil, false)
+            end
+            if distance <= Config.Replacement.interactDistance and not applying then
+                if not prompt then lib.showTextUI('[E] ' .. Config.Replacement.label); prompt = true end
+                if IsControlJustReleased(0, 38) then
+                    applying = true
+                    lib.hideTextUI(); prompt = false
+                    local input = lib.inputDialog(Config.Replacement.label, {
+                        {type = 'input', label = 'Kenteken', description = 'Met spaties, bijvoorbeeld O 396 MV',
+                            required = true, min = 1, max = 8},
+                        {type = 'checkbox', label = ('Nieuw bewijs: €%s. Vorig bewijs nietig verklaren.'):format(Config.Replacement.price),
+                            required = true}
+                    })
+                    if input and input[2] then
+                        local ok, result = pcall(lib.callback.await, 'ts_nlplates:document:replace', false, input[1])
+                        lib.notify({title = Config.Replacement.label,
+                            description = ok and result and result.message or 'Het loket reageert niet.',
+                            type = ok and result and result.ok and 'success' or 'error'})
+                    end
+                    applying = false
+                end
+            elseif prompt then
+                lib.hideTextUI(); prompt = false
+            end
+            Wait(distance < 20 and 0 or 750)
+        end
+    end)
+    AddEventHandler('onResourceStop', function(name)
+        if name == GetCurrentResourceName() then
+            if prompt then lib.hideTextUI() end
+            if blip then RemoveBlip(blip) end
+        end
+    end)
+end

@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'Troy Scripts'
 description 'Nederlandse kentekens en toonbaar kentekenbewijs voor ESX / ox_inventory'
-version '1.0.3'
+version '1.0.4'
 
 shared_scripts { '@ox_lib/init.lua', 'config.lua', 'plate_format.lua' }
 client_scripts { 'client.lua', 'registration_client.lua' }

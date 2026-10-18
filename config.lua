@@ -1,5 +1,5 @@
 Config = {}
-Config.Version = '1.0.1'
+Config.Version = '1.0.2'
 
 -- Een controle bij starten; handmatig vanuit console: ts_nlplates_check
 Config.VersionCheck = true
@@ -20,8 +20,8 @@ Config.Textures = {
 
 Config.DebugCommand = 'nlplaatinfo' -- false om uit te schakelen; alleen uitlezen
 
--- A = willekeurige letter; 1 = willekeurig cijfer. Maximaal 8 tekens incl. streepjes.
-Config.PlateFormat = 'A-111-AA'
+-- A = willekeurige letter; 1 = willekeurig cijfer. Maximaal 8 tekens incl. spaties.
+Config.PlateFormat = 'A 111 AA'
 Config.NPCPlates = true
 Config.NPCScanInterval = 2000
 
@@ -32,9 +32,25 @@ Config.Registration = {
     command = 'kentekenbewijs', -- bekijken/tonen vanuit het dashboardkastje
     unknownOwner = 'Onbekend',
 }
--- ESX: deze queries gebruiken uitsluitend parameters voor speler-/voertuiggegevens.
-Config.OwnerQuery = [[
-    SELECT v.owner, COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.firstname, u.lastname)), ''), ?) AS owner_name
-    FROM owned_vehicles v LEFT JOIN users u ON u.identifier = v.owner
-    WHERE v.plate = ? LIMIT 1
-]]
+
+-- Jobnamen krijgen het label uit ESX jobs, met optionele eigen bedrijfsnaam.
+Config.CompanyNames = {
+    taxi = 'Cab & Co',
+    police = 'Politie',
+    ambulance = 'Ambulance',
+    mechanic = 'Mechanic',
+}
+Config.Replacement = {
+    enabled = true,
+    price = 250, -- euro; 0 = gratis
+    account = 'bank', -- ESX account: bank of money
+    society = 'society_police', -- ontvangt de kosten van een nieuwe kaart
+    placeCommand = 'kentekenpunt',
+    adminAce = 'admin',
+    interactDistance = 2.0,
+    serverDistance = 3.0,
+    label = 'Kentekenloket',
+    blip = true,
+    companyMinGrade = 3, -- bedrijfsbewijs vervangen: eigen job + minimaal deze rang
+    cooldownSeconds = 30,
+}

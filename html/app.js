@@ -5,7 +5,9 @@ window.addEventListener('message', ({data}) => {
     if (data?.action !== 'open' || !data.data) return;
     const d = data.data;
     text('plate', d.plate); text('owner', d.owner); text('brand', d.brandName);
-    text('model', d.modelName); text('number', 'TS-' + String(d.documentId).padStart(7, '0'));
+    text('model', d.modelName); text('number', d.documentNumber || ('TS-' + String(d.documentId).padStart(7, '0')));
+    text('validity', d.valid === false ? 'NIETIG VERKLAARD' : 'GELDIG');
+    card.classList.toggle('invalid', d.valid === false);
     text('date', d.issued); text('hint', data.own ? 'ESC om te sluiten' : 'BACKSPACE • SLUIT NA 15 SECONDEN');
     document.getElementById('close').hidden = !data.own;
     card.hidden = false;

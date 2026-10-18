@@ -2,6 +2,17 @@ local ox = exports.ox_inventory
 local ready, hooksInstalled = false, false
 local npcBusy, npcDone, issuing, lastUse = {}, {}, {}, {}
 local normalize = TSPlate.normalize
+local ESX = exports.es_extended:getSharedObject()
+local replacementBusy, replacementUse, born = {}, {}, {}
+local counter
+local versionsQuery = "SELECT revision, DATE_FORMAT(issued_at, '%d-%m-%Y') AS issued_date FROM ts_nlplates_document_versions WHERE document_id = ?"
+
+local function loadVersion(row)
+    local version = MySQL.single.await(versionsQuery, {row.id})
+    row.revision = version and tonumber(version.revision) or 1
+    row.current_date = version and version.issued_date or row.issued_date
+    return row
+end
 
 local function notify(src, message, kind)
     TriggerClientEvent('ox_lib:notify', src, {
@@ -78,22 +89,53 @@ local function formatNPC(entity)
 end
 
 AddEventHandler('entityCreated', function(entity)
+    born[entity] = GetGameTimer()
     SetTimeout(750, function() formatNPC(entity) end)
 end)
 AddEventHandler('entityRemoved', function(entity)
-    npcDone[entity], npcBusy[entity] = nil, nil
+    npcDone[entity], npcBusy[entity], born[entity] = nil, nil, nil
 end)
 
-local function ownerOf(plate)
-    local row = MySQL.single.await(Config.OwnerQuery, {Config.Registration.unknownOwner, plate})
-    return row and row.owner_name or Config.Registration.unknownOwner
+local function companyLabel(job)
+    return Config.CompanyNames[job]
+        or MySQL.scalar.await('SELECT label FROM jobs WHERE name = ? LIMIT 1', {job})
+        or job
 end
 
-local function metadataFor(row, owner)
+local function ownership(plate)
+    local row = MySQL.single.await([[
+        SELECT v.*, CONCAT_WS(' ', u.firstname, u.lastname) AS owner_name
+        FROM owned_vehicles v LEFT JOIN users u ON u.identifier = v.owner
+        WHERE v.plate = ? LIMIT 1
+    ]], {plate})
+    if row then
+        if row.job_vehicle == true or tonumber(row.job_vehicle) == 1 then
+            local job = tostring(row.owner):gsub('^society_', '')
+            return {name = companyLabel(job), job = job}
+        end
+        return {name = row.owner_name and row.owner_name:match('%S') and row.owner_name
+            or Config.Registration.unknownOwner, identifier = row.owner}
+    end
+    local business = MySQL.single.await('SELECT job FROM ts_nlplates_business_vehicles WHERE plate = ?', {plate})
+    if business then return {name = companyLabel(business.job), job = business.job} end
+    return {name = Config.Registration.unknownOwner}
+end
+
+local function ownerOf(plate) return ownership(plate).name end
+
+local function metadataFor(row, owner, old)
+    local revision = old and (tonumber(old.revision) or 1) or row.revision or 1
+    old = old or {}
+    local valid = revision == (row.revision or 1)
+    local number = ('TS-%07d'):format(row.id)
+    if revision > 1 then number = number .. ('-%02d'):format(revision) end
+    local status = valid and 'GELDIG' or 'NIETIG VERKLAARD'
     return {
-        plate = row.plate, documentId = tostring(row.id), model = tonumber(row.model),
-        owner = owner, issued = row.issued_date,
-        description = ('Kenteken: %s\nGeregistreerde eigenaar: %s'):format(row.plate, owner)
+        plate = row.plate, documentId = tostring(row.id), revision = revision,
+        documentNumber = number, valid = valid, status = status,
+        model = tonumber(row.model), owner = owner,
+        issued = valid and (row.current_date or row.issued_date) or old.issued or row.issued_date,
+        description = ('%s | %s\nKenteken: %s\nGeregistreerde eigenaar: %s'):format(status, number, row.plate, owner)
     }
 end
 
@@ -123,6 +165,7 @@ local function ensureDocument(payload)
                 "SELECT *, DATE_FORMAT(created_at, '%d-%m-%Y') AS issued_date FROM ts_nlplates_documents WHERE plate = ?", {plate})
         end
         if not row then error('Registratie kon niet worden opgeslagen') end
+        loadVersion(row)
         local items = ox:GetInventoryItems(payload.inventoryId) or {}
         local current
         for _, item in pairs(items) do
@@ -133,7 +176,7 @@ local function ensureDocument(payload)
             end
         end
         if current then
-            ox:SetMetadata(payload.inventoryId, current.slot, metadataFor(row, ownerOf(plate)))
+            ox:SetMetadata(payload.inventoryId, current.slot, metadataFor(row, ownerOf(plate), current.metadata))
             if tonumber(row.issued) ~= 1 then
                 MySQL.update.await('UPDATE ts_nlplates_documents SET issued = 1 WHERE id = ?', {row.id})
             end
@@ -209,11 +252,14 @@ RegisterNetEvent('ts_nlplates:document:show', function(request, target)
     local row = MySQL.single.await(
         "SELECT *, DATE_FORMAT(created_at, '%d-%m-%Y') AS issued_date FROM ts_nlplates_documents WHERE id = ?", {id})
     if not row or normalize(item.metadata.plate) ~= row.plate then return end
+    loadVersion(row)
     local owner = ownerOf(row.plate)
     -- Na database-await opnieuw bezit en afstand controleren.
     local held = resolveHeldItem(src, request)
     if not held or tostring(held.metadata.documentId) ~= tostring(row.id) or not validTarget(src, target) then return end
-    local data = metadataFor(row, owner)
+    -- Reissue kan tijdens de owner-query afgerond zijn: lees de geldigheid opnieuw.
+    loadVersion(row)
+    local data = metadataFor(row, owner, held.metadata)
     ox:SetMetadata(inventory, item.slot, data)
     TriggerClientEvent('ts_nlplates:document:display', target, data, target == src)
     if target ~= src then notify(src, 'Kentekenbewijs getoond aan de speler.') end
@@ -233,7 +279,7 @@ lib.callback.register('ts_nlplates:document:glovebox', function(src, netId)
     end
 end)
 
-AddEventHandler('playerDropped', function() lastUse[source] = nil end)
+AddEventHandler('playerDropped', function() lastUse[source], replacementUse[source] = nil, nil end)
 AddEventHandler('onResourceStop', function(name)
     if name == 'ox_inventory' then hooksInstalled = false end
 end)
@@ -241,9 +287,196 @@ AddEventHandler('onResourceStart', function(name)
     if name == 'ox_inventory' then SetTimeout(1000, installHooks) end
 end)
 
+-- Koppeling voor jobgarage-spawners: controleer echte serverconfig, job, model en locatie.
+RegisterNetEvent('ts_nlplates:business:register', function(netId)
+    local src = source
+    if not ready then return end
+    local vehicle = vehicleFromId(netId)
+    local player = ESX.GetPlayerFromId(src)
+    local ped = GetPlayerPed(src)
+    if not vehicle or not player or ped == 0 or not born[vehicle]
+        or GetGameTimer() - born[vehicle] > 60000 then return end
+    if GetPlayerRoutingBucket(src) ~= GetEntityRoutingBucket(vehicle)
+        or #(GetEntityCoords(ped) - GetEntityCoords(vehicle)) > 10 then return end
+    local plate = normalize(GetVehicleNumberPlateText(vehicle))
+    if plate == '' or #plate > 8 then return end
+    if MySQL.scalar.await('SELECT plate FROM owned_vehicles WHERE plate = ? LIMIT 1', {plate}) then return end
+    local ok, garages = pcall(function() return exports['jg-advancedgarages']:TSGetJobGarages() end)
+    if not ok or type(garages) ~= 'table' then return end
+    local job = player.getJob()
+    for name, garage in pairs(garages) do
+        local allowed = false
+        if type(garage.job) == 'string' then allowed = garage.job == job.name end
+        if type(garage.job) == 'table' then
+            for _, candidate in pairs(garage.job) do if candidate == job.name then allowed = true end end
+        end
+        if allowed and garage.vehiclesType == 'spawner' and garage.coords
+            and #(GetEntityCoords(vehicle) - vector3(garage.coords.x, garage.coords.y, garage.coords.z)) <= 50 then
+            for _, definition in pairs(garage.vehicles or {}) do
+                local model = type(definition.model) == 'number' and definition.model or joaat(definition.model or '')
+                if model == GetEntityModel(vehicle) and (tonumber(job.grade) or 0) >= (definition.minJobGrade or 0) then
+                    -- Persoonlijke voertuigen hebben hierboven voorrang; geen clientnaam gebruiken.
+                    MySQL.query.await([[
+                        INSERT INTO ts_nlplates_business_vehicles (plate, job, model, garage) VALUES (?, ?, ?, ?)
+                        ON DUPLICATE KEY UPDATE job = VALUES(job), model = VALUES(model), garage = VALUES(garage)
+                    ]], {plate, job.name, tostring(model), name})
+                    return
+                end
+            end
+        end
+    end
+end)
+
+local function atCounter(src)
+    local ped, c = GetPlayerPed(src), counter
+    return c and ped ~= 0 and GetPlayerRoutingBucket(src) == 0
+        and #(GetEntityCoords(ped) - vector3(c.x, c.y, c.z)) <= Config.Replacement.serverDistance
+end
+
+lib.callback.register('ts_nlplates:counter:get', function() return counter end)
+
+RegisterCommand(Config.Replacement.placeCommand, function(src, args)
+    if src == 0 then return print('[ts_nlplates] Gebruik dit commando ingame.') end
+    if not IsPlayerAceAllowed(src, Config.Replacement.adminAce) then
+        return notify(src, 'Geen toegang: ACE admin vereist.', 'error')
+    end
+    if not ready then return notify(src, 'Registratie is nog niet gereed.', 'error') end
+    if GetPlayerRoutingBucket(src) ~= 0 then return notify(src, 'Plaats het loket in de normale wereld.', 'error') end
+    local location
+    if args[1] ~= 'verwijder' then
+        local ped = GetPlayerPed(src)
+        if ped == 0 then return end
+        local pos = GetEntityCoords(ped)
+        location = {x = pos.x, y = pos.y, z = pos.z}
+    end
+    local ok = pcall(MySQL.query.await,
+        'INSERT INTO ts_nlplates_settings (id, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)',
+        {'counter', json.encode(location or false)})
+    if not ok then return notify(src, 'Locatie opslaan mislukt; controleer de serverconsole.', 'error') end
+    counter = location
+    TriggerClientEvent('ts_nlplates:counter:update', -1, counter or false)
+    notify(src, location and 'Kentekenloket geplaatst en opgeslagen.' or 'Kentekenloket verwijderd.')
+end, false)
+
+local function mayReplace(src, plate)
+    local player = ESX.GetPlayerFromId(src)
+    if not player then return false end
+    local record = ownership(plate)
+    if record.identifier then return player.identifier == record.identifier end
+    if record.job then
+        local job = player.getJob()
+        return job.name == record.job and (tonumber(job.grade) or 0) >= Config.Replacement.companyMinGrade
+    end
+    return false
+end
+
+lib.callback.register('ts_nlplates:document:replace', function(src, rawPlate)
+    if not ready or not Config.Registration.enabled or not Config.Replacement.enabled then
+        return {ok = false, message = 'Het loket is niet beschikbaar.'}
+    end
+    if type(rawPlate) ~= 'string' or #rawPlate > 32 or not atCounter(src) then
+        return {ok = false, message = 'Ga naar het kentekenloket.'}
+    end
+    local plate = normalize(rawPlate)
+    if #plate == 0 or #plate > 8 or not plate:match('^[A-Z0-9 ]+$') then
+        return {ok = false, message = 'Vul het kenteken in met spaties, bijvoorbeeld O 396 MV.'}
+    end
+    if replacementBusy[plate] or issuing[plate] then
+        return {ok = false, message = 'Voor dit kenteken loopt al een aanvraag.'}
+    end
+    local now = GetGameTimer()
+    if replacementUse[src] and now - replacementUse[src] < Config.Replacement.cooldownSeconds * 1000 then
+        return {ok = false, message = 'Wacht even voordat je opnieuw een aanvraag doet.'}
+    end
+    replacementUse[src] = now
+    replacementBusy[plate], issuing[plate] = true, true
+    local result, chargedPlayer, chargedAmount
+    local committed = false
+    local ok, err = pcall(function()
+        if not mayReplace(src, plate) then
+            result = {ok = false, message = 'Dit voertuig staat niet op jouw naam, of je bedrijfsrang is te laag.'}
+            return
+        end
+        local row = MySQL.single.await(
+            "SELECT *, DATE_FORMAT(created_at, '%d-%m-%Y') AS issued_date FROM ts_nlplates_documents WHERE plate = ?", {plate})
+        if not row then
+            result = {ok = false, message = 'Er is nog geen bewijs uitgegeven. Open eerst het dashboardkastje.'}
+            return
+        end
+        loadVersion(row)
+        local data = metadataFor(row, ownerOf(plate))
+        if not atCounter(src) or not mayReplace(src, plate) then
+            result = {ok = false, message = 'De aanvraag is vervallen. Blijf bij het loket.'}
+            return
+        end
+        -- Uniek uitgiftenummer; mislukte aanvragen worden nooit opnieuw geactiveerd.
+        local issueId = MySQL.insert.await('INSERT INTO ts_nlplates_document_issues (document_id) VALUES (?)', {row.id})
+        if not issueId or issueId < 1 then error('Geen uitgiftenummer beschikbaar') end
+        row.revision = issueId + 1
+        row.current_date = os.date('%d-%m-%Y')
+        data = metadataFor(row, data.owner)
+        local player = ESX.GetPlayerFromId(src)
+        local cost = Config.Replacement.price
+        local account = player and player.getAccount(Config.Replacement.account)
+        if not account or (tonumber(account.money) or 0) < cost then
+            result = {ok = false, message = 'Onvoldoende saldo voor een nieuw bewijs.'}
+            return
+        end
+        local policeAccount
+        if cost > 0 then
+            if GetResourceState('esx_addonaccount') ~= 'started' then
+                result = {ok = false, message = 'De politierekening is niet beschikbaar. Er is niets afgeschreven.'}
+                return
+            end
+            TriggerEvent('esx_addonaccount:getSharedAccount', Config.Replacement.society, function(account)
+                policeAccount = account
+            end)
+            if not policeAccount or type(policeAccount.addMoney) ~= 'function' then
+                result = {ok = false, message = 'De politierekening ontbreekt. Er is niets afgeschreven.'}
+                return
+            end
+            player.removeAccountMoney(Config.Replacement.account, cost, 'Vervangend kentekenbewijs')
+            chargedPlayer, chargedAmount = player, cost
+        end
+        local added, response = ox:AddItem(src, Config.Registration.item, 1, data)
+        if not added then
+            result = {ok = false, message = 'Geen vrije inventarisruimte. Je oude bewijs blijft geldig; een afschrijving wordt terugbetaald.'}
+            return
+        end
+        -- Voeg eerst toe: een volle inventaris maakt het oude bewijs niet ongeldig.
+        -- Bij DB-falen is de nieuwe revisie nooit geactiveerd en blijft de oude geldig.
+        committed = MySQL.transaction.await({
+            {query = [[INSERT INTO ts_nlplates_document_versions (document_id, revision, issued_at)
+                VALUES (?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE
+                revision = VALUES(revision), issued_at = CURRENT_TIMESTAMP]], values = {row.id, row.revision}},
+            {query = 'UPDATE ts_nlplates_documents SET issued = 1 WHERE id = ?', values = {row.id}}
+        })
+        if not committed then
+            ox:RemoveItem(src, Config.Registration.item, 1, data)
+            result = {ok = false, message = 'Opslaan mislukt. Het oude bewijs blijft geldig.'}
+            return
+        end
+        if cost > 0 then
+            policeAccount.addMoney(cost)
+        end
+        result = {ok = true, message = ('Nieuw bewijs %s ontvangen. Het vorige bewijs is nietig verklaard.'):format(data.documentNumber)}
+    end)
+    if chargedPlayer and not committed then
+        chargedPlayer.addAccountMoney(Config.Replacement.account, chargedAmount, 'Terugbetaling kentekenbewijs')
+    end
+    replacementBusy[plate], issuing[plate] = nil, nil
+    if not ok then
+        print('[ts_nlplates] Vervanging mislukt: ' .. tostring(err))
+        return {ok = false, message = 'Aanvraag mislukt. Controleer de serverconsole.'}
+    end
+    return result
+end)
+
 MySQL.ready(function()
     local ok, err = pcall(function()
         TSPlate.generate(Config.PlateFormat)
+        assert(type(Config.Replacement.price) == 'number' and Config.Replacement.price >= 0
+            and Config.Replacement.price % 1 == 0, 'Replacement.price moet een geheel bedrag >= 0 zijn')
         local numbersExist = pcall(MySQL.query.await, 'SELECT plate FROM ts_nlplates_numbers LIMIT 0')
         if not numbersExist then MySQL.query.await([[CREATE TABLE IF NOT EXISTS ts_nlplates_numbers (
             plate VARCHAR(8) NOT NULL PRIMARY KEY,
@@ -257,6 +490,40 @@ MySQL.ready(function()
             issued TINYINT NOT NULL DEFAULT 0,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]]) end
+        local extra = {
+            ts_nlplates_settings = [[CREATE TABLE IF NOT EXISTS ts_nlplates_settings (
+                id VARCHAR(32) NOT NULL PRIMARY KEY,
+                value LONGTEXT NOT NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
+            ts_nlplates_document_issues = [[CREATE TABLE IF NOT EXISTS ts_nlplates_document_issues (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                document_id INT UNSIGNED NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
+            ts_nlplates_document_versions = [[CREATE TABLE IF NOT EXISTS ts_nlplates_document_versions (
+                document_id INT UNSIGNED NOT NULL PRIMARY KEY,
+                revision INT UNSIGNED NOT NULL DEFAULT 1,
+                issued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
+            ts_nlplates_business_vehicles = [[CREATE TABLE IF NOT EXISTS ts_nlplates_business_vehicles (
+                plate VARCHAR(8) NOT NULL PRIMARY KEY,
+                job VARCHAR(64) NOT NULL,
+                model VARCHAR(32) NOT NULL,
+                garage VARCHAR(100) NOT NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]]
+        }
+        for name, ddl in pairs(extra) do
+            if not pcall(MySQL.query.await, 'SELECT * FROM ' .. name .. ' LIMIT 0') then
+                MySQL.query.await(ddl)
+            end
+        end
+        local saved = MySQL.scalar.await("SELECT value FROM ts_nlplates_settings WHERE id = 'counter'")
+        if saved then
+            local decoded, value = pcall(json.decode, saved)
+            if decoded and type(value) == 'table' and type(value.x) == 'number'
+                and type(value.y) == 'number' and type(value.z) == 'number' then counter = value end
+        end
+        TriggerClientEvent('ts_nlplates:counter:update', -1, counter or false)
         -- Controleer de ESX-query direct; misconfiguratie stopt uitgifte.
         ownerOf('')
         -- Reeds bestaande voertuigen kunnen al sleutels of geladen inventarissen hebben.
