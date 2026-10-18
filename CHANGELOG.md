@@ -1,3 +1,10 @@
+# 1.0.5
+
+- ts_bridge 1.0.1 als centrale koppeling voor framework, inventory, eigendom, garages, sleutels en betalingen.
+- Blijvende betaalmarkering bij onzekere uitkomst; geen automatische herhaling.
+- Configschema blijft 1.0.2; bestaande loketprijs, ACE admin en kaartrevisies blijven behouden.
+- Zie ../VERWIJDERD.md voor verwijderde/verplaatste koppelingen.
+
 # 1.0.4
 - JG-compatibele kentekens met spaties; streepjes worden niet meer gegenereerd.
 - Offline migratiehulp voor reeds opgeslagen 1.0.3-kentekens.

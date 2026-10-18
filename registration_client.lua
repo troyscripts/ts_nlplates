@@ -33,7 +33,7 @@ end
 
 exports('useRegistration', function(data, slot)
     if not Config.Registration.enabled then return end
-    exports.ox_inventory:useItem(data, function(used)
+    exports.ts_bridge:UseItem(data, function(used)
         if used then openMenu({slot = data.slot or (type(slot) == 'table' and slot.slot)}) end
     end)
 end)
@@ -49,7 +49,7 @@ if Config.Registration.command then
         if not slot then
             return lib.notify({description = 'Open eerst het dashboardkastje. Is het bewijs meegenomen? Gebruik het vanuit je inventaris.', type = 'error'})
         end
-        exports.ox_inventory:closeInventory()
+        exports.ts_bridge:CloseInventory()
         openMenu({slot = slot, netId = netId})
     end, false)
 end
@@ -93,8 +93,8 @@ AddEventHandler('onResourceStop', function(resource)
 end)
 
 -- JG geeft geen bedrijfsnaam aan ons door. De server controleert zelf zijn garageconfig.
-AddEventHandler('jg-advancedgarages:client:TakeOutVehicle:config', function(vehicle, _, garageType)
-    if garageType ~= 'job' or not DoesEntityExist(vehicle) then return end
+AddEventHandler('ts_bridge:vehicle:jobSpawned', function(vehicle)
+    if not DoesEntityExist(vehicle) then return end
     local netId = NetworkGetNetworkIdFromEntity(vehicle)
     SetTimeout(1000, function()
         if DoesEntityExist(vehicle) then TriggerServerEvent('ts_nlplates:business:register', netId) end

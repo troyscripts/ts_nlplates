@@ -1,31 +1,6 @@
-# Update 1.0.3 → 1.0.4
+# Aanvullende installatie en migratie
 
-## Wat deze update doet
-
-- Nieuwe kentekens gebruiken spaties: **O 396 MV**. JG weigert de streepjes uit 1.0.3.
-- Een verplaatsbaar kentekenloket geeft vervangende kaarten uit.
-- De prijs en betaalrekening staan in config.lua. Standaard: **€250 van bank naar society_police**.
-- Een vervanging krijgt een nieuw documentnummer. Het voertuigkenteken verandert daarbij niet.
-- Oude bewijzen tonen bij bekijken én tonen een rode balk **NIETIG VERKLAARD**.
-- Bedrijfsvoertuigen tonen het bedrijfslabel. Voor taxi is Cab & Co als voorbeeld ingesteld.
-- Scriptversie 1.0.4, configversie 1.0.2.
-
-Dit pakket bouwt voort op 1.0.3. Het bevat de nieuwe/gewijzigde bestanden; behoud de bestaande client.lua, textures, stream-bestanden en het ox_inventory-item/icoon uit de vorige installatie.
-
-## Installeren
-
-1. Maak een back-up van je database en resources.
-2. Stop de server en kopieer de updatebestanden over de gelijknamige bestaande bestanden.
-3. Importeer **ts_nlplates/install.sql** in je ESX-database. Bestaande gegevens worden behouden.
-4. Controleer in JG Dealerships: `Config.PlateFormat = "A 111 AA"`.
-   De centrale generatoraanpassing in framework/sv-functions.lua uit 1.0.3 blijft nodig.
-5. De meegeleverde JG-config is gebaseerd op jouw eerdere upload. Heb je sindsdien instellingen veranderd?
-   Pas dan alleen de PlateFormat-regel aan in je huidige config.
-6. Voeg het serverexportje uit jg-advancedgarages/config/config-sv.lua toe aan je bestaande bestand.
-   Dit leest uitsluitend de echte serverconfig van de jobgarages uit.
-7. Startvolgorde: oxmysql, ox_lib, es_extended, esx_addonaccount, ox_inventory, ts_nlplates,
-   MrNewbVehicleKeys en de JG-resources, met hun bestaande overige dependencies.
-8. Gebruik voor oudere kentekens eerst de procedure hieronder, voordat spelers weer joinen.
+Lees eerst ../../INSTALLATIE.md voor de bridge-update 1.0.1 en nlplates 1.0.5.
 
 ## Bestaande kentekens met streepjes omzetten
 
@@ -34,7 +9,7 @@ De hulpresource `ts_nlplates_migrate` is daarom meegeleverd. Deze wordt niet per
 
 1. Zet de server in onderhoud zodat niemand kan joinen; maak een databaseback-up.
 2. Zorg dat alle spelers uitgelogd zijn, zodat inventarissen zijn opgeslagen.
-3. Stop ts_nlplates, JG Dealerships, JG Advanced Garages, MrNewbVehicleKeys, ox_inventory en es_extended.
+3. Stop ts_nlplates, ts_bridge, JG Dealerships, JG Advanced Garages, MrNewbVehicleKeys, ox_inventory en es_extended.
    Laat oxmysql draaien. Stop ook andere resources die voertuigen/inventarissen opslaan.
 4. Plaats de map ts_nlplates_migrate in resources en voer in de serverconsole uit:
 
@@ -108,9 +83,9 @@ Config.Replacement = {
 Verander price naar het gewenste bedrag; 0 betekent gratis.
 Betaalde vervanging vereist een bestaande gedeelde esx_addonaccount-rekening society_police.
 Bij ontbrekende rekening of onvoldoende saldo start de uitgifte niet.
-Een volle inventaris of mislukte databaseopslag leidt tot terugbetaling.
+Een volle inventaris of mislukte databaseopslag start een gecontroleerde terugbetaling. Bij onzekere resultaten blijft een betaalmarkering staan voor handmatige controle (zie de hoofdhandleiding).
 Na een geslaagde uitgifte wordt het bedrag aan de politierekening toegevoegd.
-De betaling loopt in deze versie rechtstreeks via ESX/esx_addonaccount; er is nog geen ts_bridge-aanpassing.
+De betaling loopt via de geldexports van ts_bridge. De bestaande bridgebankprovider bepaalt de persoonlijke bankrekening; de societyrekening loopt via de bridge naar esx_addonaccount.
 Koppel/synchroniseer een eventueel ander bankscript met deze bestaande societyrekening.
 
 ## Nieuw document, oud bewijs nietig

@@ -1,8 +1,7 @@
-local ox = exports.ox_inventory
+local bridge = exports.ts_bridge
 local ready, hooksInstalled = false, false
 local npcBusy, npcDone, issuing, lastUse = {}, {}, {}, {}
 local normalize = TSPlate.normalize
-local ESX = exports.es_extended:getSharedObject()
 local replacementBusy, replacementUse, born = {}, {}, {}
 local counter
 local versionsQuery = "SELECT revision, DATE_FORMAT(issued_at, '%d-%m-%Y') AS issued_date FROM ts_nlplates_document_versions WHERE document_id = ?"
@@ -24,7 +23,7 @@ local function reservePlate()
     if not ready then return false end
     for _ = 1, 100 do
         local plate = TSPlate.generate(Config.PlateFormat)
-        if not MySQL.scalar.await('SELECT plate FROM owned_vehicles WHERE plate = ? LIMIT 1', {plate}) then
+        if not bridge:VehicleExists(plate) then
             local changed = MySQL.update.await(
                 'INSERT IGNORE INTO ts_nlplates_numbers (plate) VALUES (?)', {plate})
             if changed == 1 then return plate end
@@ -59,7 +58,7 @@ local function formatNPC(entity)
     if oldPlate == '' then return end
     npcBusy[entity] = true
     local ok, err = pcall(function()
-        if MySQL.scalar.await('SELECT plate FROM owned_vehicles WHERE plate = ? LIMIT 1', {oldPlate}) then
+        if bridge:VehicleExists(oldPlate) then
             npcDone[entity] = true
             return
         end
@@ -98,23 +97,16 @@ end)
 
 local function companyLabel(job)
     return Config.CompanyNames[job]
-        or MySQL.scalar.await('SELECT label FROM jobs WHERE name = ? LIMIT 1', {job})
+        or bridge:GetCompanyLabel(job)
         or job
 end
 
 local function ownership(plate)
-    local row = MySQL.single.await([[
-        SELECT v.*, CONCAT_WS(' ', u.firstname, u.lastname) AS owner_name
-        FROM owned_vehicles v LEFT JOIN users u ON u.identifier = v.owner
-        WHERE v.plate = ? LIMIT 1
-    ]], {plate})
+    local row = bridge:GetVehicleOwner(plate)
     if row then
-        if row.job_vehicle == true or tonumber(row.job_vehicle) == 1 then
-            local job = tostring(row.owner):gsub('^society_', '')
-            return {name = companyLabel(job), job = job}
-        end
-        return {name = row.owner_name and row.owner_name:match('%S') and row.owner_name
-            or Config.Registration.unknownOwner, identifier = row.owner}
+        if row.job then return {name = companyLabel(row.job), job = row.job} end
+        return {name = row.name and row.name:match('%S') and row.name
+            or Config.Registration.unknownOwner, identifier = row.identifier}
     end
     local business = MySQL.single.await('SELECT job FROM ts_nlplates_business_vehicles WHERE plate = ?', {plate})
     if business then return {name = companyLabel(business.job), job = business.job} end
@@ -166,7 +158,7 @@ local function ensureDocument(payload)
         end
         if not row then error('Registratie kon niet worden opgeslagen') end
         loadVersion(row)
-        local items = ox:GetInventoryItems(payload.inventoryId) or {}
+        local items = bridge:GetInventoryItems(payload.inventoryId) or {}
         local current
         for _, item in pairs(items) do
             if item.name == Config.Registration.item and item.metadata
@@ -176,12 +168,12 @@ local function ensureDocument(payload)
             end
         end
         if current then
-            ox:SetMetadata(payload.inventoryId, current.slot, metadataFor(row, ownerOf(plate), current.metadata))
+            bridge:SetItemMetadata(payload.inventoryId, current.slot, metadataFor(row, ownerOf(plate), current.metadata))
             if tonumber(row.issued) ~= 1 then
                 MySQL.update.await('UPDATE ts_nlplates_documents SET issued = 1 WHERE id = ?', {row.id})
             end
         elseif tonumber(row.issued) ~= 1 then
-            local success, reason = ox:AddItem(payload.inventoryId, Config.Registration.item, 1,
+            local success, reason = bridge:AddItem(payload.inventoryId, Config.Registration.item, 1,
                 metadataFor(row, ownerOf(plate)))
             if success then
                 MySQL.update.await('UPDATE ts_nlplates_documents SET issued = 1 WHERE id = ?', {row.id})
@@ -200,9 +192,8 @@ end
 
 -- Het bewijs mag meegenomen worden. De uitgiftetabel voorkomt opnieuw aanmaken.
 local function installHooks()
-    if hooksInstalled or GetResourceState('ox_inventory') ~= 'started' then return end
-    hooksInstalled = true
-    ox:registerHook('openInventory', ensureDocument, {typeFilter = {glovebox = true, trunk = true}})
+    if hooksInstalled then return end
+    hooksInstalled = bridge:RegisterInventoryHook('openInventory', ensureDocument, {typeFilter = {glovebox = true, trunk = true}}) ~= nil
 end
 
 local function resolveHeldItem(src, request)
@@ -217,11 +208,11 @@ local function resolveHeldItem(src, request)
         if GetPlayerRoutingBucket(src) ~= GetEntityRoutingBucket(entity) then return end
         -- Gebruik de echte ox-inventaris-ID, inclusief server trimplate-instelling.
         local raw = GetVehicleNumberPlateText(entity)
-        inventory = 'glove' .. (GetConvarBool('inventory:trimplate', true) and normalize(raw) or raw)
-        local inv = ox:GetInventory(inventory)
+        inventory = bridge:GetGloveboxId(raw)
+        local inv = bridge:GetInventory(inventory)
         if not inv then return end
     end
-    local item = ox:GetSlot(inventory, slot)
+    local item = bridge:GetInventorySlot(inventory, slot)
     if not item or item.name ~= Config.Registration.item or item.count < 1 then return end
     return item, inventory
 end
@@ -260,7 +251,7 @@ RegisterNetEvent('ts_nlplates:document:show', function(request, target)
     -- Reissue kan tijdens de owner-query afgerond zijn: lees de geldigheid opnieuw.
     loadVersion(row)
     local data = metadataFor(row, owner, held.metadata)
-    ox:SetMetadata(inventory, item.slot, data)
+    bridge:SetItemMetadata(inventory, item.slot, data)
     TriggerClientEvent('ts_nlplates:document:display', target, data, target == src)
     if target ~= src then notify(src, 'Kentekenbewijs getoond aan de speler.') end
 end)
@@ -271,8 +262,8 @@ lib.callback.register('ts_nlplates:document:glovebox', function(src, netId)
     local entity = vehicleFromId(netId)
     if not entity or GetVehiclePedIsIn(GetPlayerPed(src), false) ~= entity then return end
     local raw = GetVehicleNumberPlateText(entity)
-    local id = 'glove' .. (GetConvarBool('inventory:trimplate', true) and normalize(raw) or raw)
-    local inv = ox:GetInventory(id)
+    local id = bridge:GetGloveboxId(raw)
+    local inv = bridge:GetInventory(id)
     if not inv then return end
     for _, item in pairs(inv.items or {}) do
         if item.name == Config.Registration.item then return item.slot end
@@ -280,19 +271,15 @@ lib.callback.register('ts_nlplates:document:glovebox', function(src, netId)
 end)
 
 AddEventHandler('playerDropped', function() lastUse[source], replacementUse[source] = nil, nil end)
-AddEventHandler('onResourceStop', function(name)
-    if name == 'ox_inventory' then hooksInstalled = false end
-end)
-AddEventHandler('onResourceStart', function(name)
-    if name == 'ox_inventory' then SetTimeout(1000, installHooks) end
-end)
+AddEventHandler('ts_bridge:inventoryStopped', function() hooksInstalled = false end)
+AddEventHandler('ts_bridge:inventoryReady', function() SetTimeout(1000, installHooks) end)
 
 -- Koppeling voor jobgarage-spawners: controleer echte serverconfig, job, model en locatie.
 RegisterNetEvent('ts_nlplates:business:register', function(netId)
     local src = source
     if not ready then return end
     local vehicle = vehicleFromId(netId)
-    local player = ESX.GetPlayerFromId(src)
+    local player = bridge:GetPlayerData(src)
     local ped = GetPlayerPed(src)
     if not vehicle or not player or ped == 0 or not born[vehicle]
         or GetGameTimer() - born[vehicle] > 60000 then return end
@@ -300,10 +287,11 @@ RegisterNetEvent('ts_nlplates:business:register', function(netId)
         or #(GetEntityCoords(ped) - GetEntityCoords(vehicle)) > 10 then return end
     local plate = normalize(GetVehicleNumberPlateText(vehicle))
     if plate == '' or #plate > 8 then return end
-    if MySQL.scalar.await('SELECT plate FROM owned_vehicles WHERE plate = ? LIMIT 1', {plate}) then return end
-    local ok, garages = pcall(function() return exports['jg-advancedgarages']:TSGetJobGarages() end)
+    if bridge:VehicleExists(plate) then return end
+    local ok, garages = pcall(function() return bridge:GetJobGarages() end)
     if not ok or type(garages) ~= 'table' then return end
-    local job = player.getJob()
+    local job = player.job
+    if not job then return end
     for name, garage in pairs(garages) do
         local allowed = false
         if type(garage.job) == 'string' then allowed = garage.job == job.name end
@@ -359,13 +347,13 @@ RegisterCommand(Config.Replacement.placeCommand, function(src, args)
 end, false)
 
 local function mayReplace(src, plate)
-    local player = ESX.GetPlayerFromId(src)
+    local player = bridge:GetPlayerData(src)
     if not player then return false end
     local record = ownership(plate)
     if record.identifier then return player.identifier == record.identifier end
     if record.job then
-        local job = player.getJob()
-        return job.name == record.job and (tonumber(job.grade) or 0) >= Config.Replacement.companyMinGrade
+        local job = player.job
+        return job and job.name == record.job and (tonumber(job.grade) or 0) >= Config.Replacement.companyMinGrade
     end
     return false
 end
@@ -392,7 +380,15 @@ lib.callback.register('ts_nlplates:document:replace', function(src, rawPlate)
     replacementBusy[plate], issuing[plate] = true, true
     local result, chargedPlayer, chargedAmount
     local committed = false
+    local paymentKey = 'payment:' .. plate
+    local function clearPayment()
+        MySQL.query.await('DELETE FROM ts_nlplates_settings WHERE id = ?', {paymentKey})
+    end
     local ok, err = pcall(function()
+        if MySQL.scalar.await('SELECT value FROM ts_nlplates_settings WHERE id = ?', {paymentKey}) then
+            result = {ok = false, message = 'Een eerdere betaling moet eerst door een beheerder worden gecontroleerd.'}
+            return
+        end
         if not mayReplace(src, plate) then
             result = {ok = false, message = 'Dit voertuig staat niet op jouw naam, of je bedrijfsrang is te laag.'}
             return
@@ -415,30 +411,36 @@ lib.callback.register('ts_nlplates:document:replace', function(src, rawPlate)
         row.revision = issueId + 1
         row.current_date = os.date('%d-%m-%Y')
         data = metadataFor(row, data.owner)
-        local player = ESX.GetPlayerFromId(src)
         local cost = Config.Replacement.price
-        local account = player and player.getAccount(Config.Replacement.account)
-        if not account or (tonumber(account.money) or 0) < cost then
-            result = {ok = false, message = 'Onvoldoende saldo voor een nieuw bewijs.'}
+        local account = Config.Replacement.account == 'money' and 'cash' or Config.Replacement.account
+        local balance = bridge:GetMoney(src, account)
+        if not balance or balance < cost then
+            result = {ok = false, message = 'Onvoldoende of niet beschikbaar saldo.'}
             return
         end
-        local policeAccount
         if cost > 0 then
-            if GetResourceState('esx_addonaccount') ~= 'started' then
+            if bridge:GetSocietyBalance(Config.Replacement.society) == nil then
                 result = {ok = false, message = 'De politierekening is niet beschikbaar. Er is niets afgeschreven.'}
                 return
             end
-            TriggerEvent('esx_addonaccount:getSharedAccount', Config.Replacement.society, function(account)
-                policeAccount = account
-            end)
-            if not policeAccount or type(policeAccount.addMoney) ~= 'function' then
-                result = {ok = false, message = 'De politierekening ontbreekt. Er is niets afgeschreven.'}
+            -- Bewaar vóór de eerste geldmutatie; ook na een crash geen automatische herhaling.
+            local payer = bridge:GetPlayerData(src)
+            MySQL.query.await('INSERT INTO ts_nlplates_settings (id, value) VALUES (?, ?)',
+                {paymentKey, json.encode({identifier = payer and payer.identifier, plate = plate,
+                    amount = cost, account = account, society = Config.Replacement.society,
+                    document = data.documentNumber, created = os.time()})})
+            local debit = bridge:RemoveMoney(src, account, cost, 'Vervangend kentekenbewijs')
+            if not debit or not debit.ok then
+                if not debit or debit.uncertain then
+                    print(('[ts_nlplates] BETALING CONTROLEREN speler=%s kenteken=%s bedrag=%s: %s'):format(src, plate, cost, json.encode(debit or {})))
+                end
+                if debit and not debit.uncertain then clearPayment() end
+                result = {ok = false, message = 'Betaling niet bevestigd. Laat een beheerder de betaling controleren voordat je opnieuw aanvraagt.'}
                 return
             end
-            player.removeAccountMoney(Config.Replacement.account, cost, 'Vervangend kentekenbewijs')
-            chargedPlayer, chargedAmount = player, cost
+            chargedPlayer, chargedAmount = src, cost
         end
-        local added, response = ox:AddItem(src, Config.Registration.item, 1, data)
+        local added, response = bridge:AddItem(src, Config.Registration.item, 1, data)
         if not added then
             result = {ok = false, message = 'Geen vrije inventarisruimte. Je oude bewijs blijft geldig; een afschrijving wordt terugbetaald.'}
             return
@@ -452,17 +454,34 @@ lib.callback.register('ts_nlplates:document:replace', function(src, rawPlate)
             {query = 'UPDATE ts_nlplates_documents SET issued = 1 WHERE id = ?', values = {row.id}}
         })
         if not committed then
-            ox:RemoveItem(src, Config.Registration.item, 1, data)
+            bridge:RemoveItem(src, Config.Registration.item, 1, data)
             result = {ok = false, message = 'Opslaan mislukt. Het oude bewijs blijft geldig.'}
             return
         end
         if cost > 0 then
-            policeAccount.addMoney(cost)
+            local paid = bridge:AddSocietyMoney(Config.Replacement.society, cost)
+            if not paid or not paid.ok then
+                print(('[ts_nlplates] POLITIEBETALING CONTROLEREN document=%s bedrag=%s: %s'):format(data.documentNumber, cost, json.encode(paid or {})))
+                result = {ok = true, message = 'Nieuw bewijs ontvangen; het vorige is nietig. Meld de niet-bevestigde politiebetaling bij een beheerder.'}
+                return
+            end
         end
+        if cost > 0 then clearPayment() end
         result = {ok = true, message = ('Nieuw bewijs %s ontvangen. Het vorige bewijs is nietig verklaard.'):format(data.documentNumber)}
     end)
     if chargedPlayer and not committed then
-        chargedPlayer.addAccountMoney(Config.Replacement.account, chargedAmount, 'Terugbetaling kentekenbewijs')
+        local refundedOk, refund = pcall(function()
+            return bridge:AddMoney(chargedPlayer, Config.Replacement.account == 'money' and 'cash' or Config.Replacement.account,
+                chargedAmount, 'Terugbetaling kentekenbewijs')
+        end)
+        if refundedOk and refund and refund.ok then
+            local cleared = pcall(clearPayment)
+            if not cleared then print('[ts_nlplates] Terugbetaald; betaalmarkering handmatig controleren: ' .. paymentKey) end
+        end
+        if not refundedOk or not refund or not refund.ok then
+            print(('[ts_nlplates] TERUGBETALING CONTROLEREN speler=%s kenteken=%s bedrag=%s'):format(src, plate, chargedAmount))
+            result = {ok = false, message = 'Aanvraag mislukt; terugbetaling niet bevestigd. Neem contact op met een beheerder.'}
+        end
     end
     replacementBusy[plate], issuing[plate] = nil, nil
     if not ok then
@@ -474,6 +493,7 @@ end)
 
 MySQL.ready(function()
     local ok, err = pcall(function()
+        assert(bridge:VehicleIntegrationReady())
         TSPlate.generate(Config.PlateFormat)
         assert(type(Config.Replacement.price) == 'number' and Config.Replacement.price >= 0
             and Config.Replacement.price % 1 == 0, 'Replacement.price moet een geheel bedrag >= 0 zijn')

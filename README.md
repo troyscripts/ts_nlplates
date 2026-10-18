@@ -1,4 +1,4 @@
-# Troy Scripts — ts_nlplates 1.0.4
+# Troy Scripts — ts_nlplates 1.0.5
 
 Nederlandse kentekens en toonbare kentekenbewijzen voor ESX/ox_inventory.
 Configversie: 1.0.2.
@@ -9,12 +9,10 @@ Configversie: 1.0.2.
 - ox_lib, oxmysql, ox_inventory en OneSync.
 - Voor betaalde vervangingen: esx_addonaccount met society_police.
 - Optionele meegeleverde aansluiting: JG Dealerships en JG Advanced Garages.
-- MrNewbVehicleKeys blijft via de bestaande JG-koppeling werken; nieuwe kentekens moeten vóór sleuteluitgifte vaststaan.
-- Een volledige ts_nlplates-installatie, inclusief client.lua, stream/ en textures/.
-  Dit updatepakket bevat uitsluitend gewijzigde/nieuwe bestanden.
+- ts_bridge 1.0.1, met de meegeleverde voertuigadapters voor JG en MrNewbVehicleKeys.
+- De map ts_nlplates in dit pakket bevat ook de oorspronkelijke client.lua, stream/ en textures/.
 
-De bridge-selectie uit onze ontwerpbespreking is nog niet ingebouwd.
-Deze versie gebruikt de bestaande ESX/ox-koppelingen rechtstreeks; ts_bridge is geen dependency.
+Koppelingen lopen nu via ts_bridge. Zie ../INSTALLATIE.md en ../ts_bridge/VOERTUIGEN.md voor centrale selectie en uitbreiding.
 
 ## Installatie
 
@@ -22,12 +20,12 @@ Lees **docs/INSTALLATIE.md** voor de update, SQL, eenmalige omzetting van bestaa
 plaatsing van het loket en tests. Importeer install.sql in dezelfde database als ESX.
 Behoud exact de resourcenaam ts_nlplates.
 
-Start na oxmysql, ox_lib, ESX, esx_addonaccount en ox_inventory; start JG daarna.
+Start na oxmysql, ox_lib, ESX, esx_addonaccount, ox_inventory en ts_bridge; start JG daarna.
 Nieuwe kentekens hebben standaard de vorm **O 396 MV**. Streepjes zijn in het formaat niet toegestaan.
 
 ## Koppelingen voor andere downloaders
 
-Gebruik je eigen configuratiebestanden. Neem niet zomaar de persoonlijke JG-config uit het updatepakket over.
+Gebruik je eigen configuratiebestanden. JG-configs worden bewust niet meegeleverd; pas de regels hieronder toe op je eigen config.
 
 ### ox_inventory
 
@@ -41,7 +39,7 @@ Voeg aan data/items.lua toe:
 },
 ```
 
-Neem ook het icoon kentekenbewijs.png uit de 1.0.3-installatie over naar web/images.
+Neem ook het icoon kentekenbewijs.png uit dit pakket over naar web/images.
 De server maakt het bewijs automatisch aan bij de eerste opening van een ondersteund dashboardkastje.
 Een meegenomen bewijs wordt niet bij iedere opening opnieuw aangemaakt.
 
@@ -53,15 +51,15 @@ Voeg bovenaan Framework.Server.VehicleGeneratePlate(seed, checkIfExists) in fram
 
 ```lua
 if seed == Config.PlateFormat or seed == nil then
-    if GetResourceState('ts_nlplates') ~= 'started' then return false end
+    if GetResourceState('ts_bridge') ~= 'started' then return false end
     local ok, plate = pcall(function()
-        return exports.ts_nlplates:GeneratePlate()
+        return exports.ts_bridge:GenerateVehiclePlate()
     end)
     return ok and plate or false
 end
 ```
 
-Dit staat al in het 1.0.3-updatebestand. Voeg het niet dubbel toe.
+Dit staat al in het meegeleverde framework/sv-functions.lua. Vervang het oudere blok; voeg het niet dubbel toe.
 Proefritten behouden hun eigen seed. De centrale export reserveert een uniek nummer.
 
 ### JG Advanced Garages — bedrijfsnaam bij spawners
@@ -74,13 +72,13 @@ exports('TSGetJobGarages', function()
 end)
 ```
 
-ts_nlplates luistert naar het bestaande TakeOutVehicle:config-event.
+ts_bridge vertaalt het bestaande TakeOutVehicle:config-event naar het interne jobSpawned-event voor nlplates.
 De server controleert de job, rang, het model en de locatie tegen de serverconfig.
 De client mag geen willekeurige bedrijfsnaam als eigenaar doorgeven.
 
 Opgeslagen jobvoertuigen worden herkend via job_vehicle/owner.
 Het label komt uit jobs.label; Config.CompanyNames kan dit overschrijven.
-Dynamische garageproviders en andere garagesystemen hebben een eigen koppeling nodig.
+Dynamische garageproviders en andere garagesystemen hebben een eigen bridge-adapter nodig.
 
 ### Andere dealer-/spawnscripts
 
@@ -120,3 +118,5 @@ Pas de keuzelijst in je eigen mechanic-resource aan; daarvan bestaat geen univer
 - Eenmalige migratiehulp: zie docs/INSTALLATIE.md
 
 Test garage, sleutels, politiebetaling en de twee kaartweergaven na installatie op je eigen server.
+
+JG-sleutelfuncties moeten eveneens naar de bridge verwijzen. Zie de hoofdhandleiding voor de twee functies en behoud eigen wijzigingen in overige JG-code.
