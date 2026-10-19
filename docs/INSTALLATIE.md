@@ -1,6 +1,18 @@
-# Aanvullende installatie en migratie
+# Volledige installatie — ts_nlplates 1.0.6
 
-Lees eerst ../../INSTALLATIE.md voor de bridge-update 1.0.1 en nlplates 1.0.5.
+Benodigd: ESX Legacy, oxmysql, ox_lib, ox_inventory, OneSync en ts_bridge 1.0.2. De standaardkoppelingen zijn voor JG Dealerships, JG Advanced Garages en MrNewbVehicleKeys. Voor betaalde vervangingen is een bestaande society_police-rekening in esx_addonaccount nodig.
+
+1. Plaats de volledige map als resources/[troyscripts]/ts_nlplates. Behoud exact deze resourcenaam.
+2. Installeer de volledige ts_bridge 1.0.2 als ts_bridge. Selecteer de providers in de bridgeconfigs. Banking staat standaard op apex; kies bewust esx als je uitsluitend de ESX-bankrekening gebruikt. Kies ook de juiste billingprovider voor je overige scripts.
+3. Importeer install.sql in dezelfde database als ESX. Bestaande documentgegevens worden behouden. Dit zet oude voertuigkentekens niet automatisch om.
+4. Voeg install/ox_inventory_item.lua als fragment toe aan je bestaande ox_inventory/data/items.lua. Kopieer install/kentekenbewijs.png naar ox_inventory/web/images.
+5. Volg de snippets in ../README.md voor JG-generator, garage-export en beide sleutelfuncties. Derdepartijresources zijn niet inbegrepen.
+6. Pas config.lua aan: plaatformaat A 111 AA, bedrijfsnamen, prijs, betaalrekening en loketinstellingen. Config.Version blijft 1.0.3. Behoud persoonlijke instellingen bij een update.
+7. Stel server-side webhook_config.lua in; zie WEBHOOKS.md. Laat URLs leeg in je openbare GitHub-repository.
+8. Startvolgorde: oxmysql, ox_lib, es_extended, esx_addonaccount, ox_inventory, gekozen bankprovider, MrNewbVehicleKeys, ts_bridge, ts_nlplates, jg-dealerships, jg-advancedgarages. Behoud ook overige dependencies van je eigen scripts.
+9. Herstart de volledige server. Test aankoop, garage, sleutels, dashboardbewijs, bedrijven, loket, betaling en webhook.
+
+De tijdelijke migratiehulp staat apart als ts_nlplates_migrate in het volledige releasepakket. Hij is alleen nodig voor bestaande streepjeskentekens. Start hem nooit standaard mee.
 
 ## Bestaande kentekens met streepjes omzetten
 

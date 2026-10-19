@@ -1,4 +1,4 @@
-# Troy Scripts — ts_nlplates 1.0.5
+# Troy Scripts — ts_nlplates 1.0.6
 
 Nederlandse kentekens en toonbare kentekenbewijzen voor ESX/ox_inventory.
 Configversie: 1.0.3.
@@ -9,10 +9,10 @@ Configversie: 1.0.3.
 - ox_lib, oxmysql, ox_inventory en OneSync.
 - Voor betaalde vervangingen: esx_addonaccount met society_police.
 - Optionele meegeleverde aansluiting: JG Dealerships en JG Advanced Garages.
-- ts_bridge 1.0.1, met de meegeleverde voertuigadapters voor JG en MrNewbVehicleKeys.
+- ts_bridge 1.0.2, met de meegeleverde voertuigadapters voor JG en MrNewbVehicleKeys.
 - De map ts_nlplates in dit pakket bevat ook de oorspronkelijke client.lua, stream/ en textures/.
 
-Koppelingen lopen nu via ts_bridge. Zie ../INSTALLATIE.md en ../ts_bridge/VOERTUIGEN.md voor centrale selectie en uitbreiding.
+Koppelingen lopen nu via ts_bridge. Zie docs/INSTALLATIE.md en de VOERTUIGEN.md in de bridge voor centrale selectie en uitbreiding.
 
 ## Installatie
 
@@ -39,7 +39,7 @@ Voeg aan data/items.lua toe:
 },
 ```
 
-Neem ook het icoon kentekenbewijs.png uit dit pakket over naar web/images.
+Kopieer install/kentekenbewijs.png naar ox_inventory/web/images. Het itemfragment staat ook in install/ox_inventory_item.lua.
 De server maakt het bewijs automatisch aan bij de eerste opening van een ondersteund dashboardkastje.
 Een meegenomen bewijs wordt niet bij iedere opening opnieuw aangemaakt.
 
@@ -59,7 +59,7 @@ if seed == Config.PlateFormat or seed == nil then
 end
 ```
 
-Dit staat al in het meegeleverde framework/sv-functions.lua. Vervang het oudere blok; voeg het niet dubbel toe.
+Pas dit toe op je eigen JG framework/sv-functions.lua. Vervang een ouder generatorblok; voeg het niet dubbel toe. JG-bronbestanden worden niet meegeleverd.
 Proefritten behouden hun eigen seed. De centrale export reserveert een uniek nummer.
 
 ### JG Advanced Garages — bedrijfsnaam bij spawners
@@ -119,4 +119,22 @@ Pas de keuzelijst in je eigen mechanic-resource aan; daarvan bestaat geen univer
 
 Test garage, sleutels, politiebetaling en de twee kaartweergaven na installatie op je eigen server.
 
-JG-sleutelfuncties moeten eveneens naar de bridge verwijzen. Zie de hoofdhandleiding voor de twee functies en behoud eigen wijzigingen in overige JG-code.
+### Sleutels in beide JG-resources
+
+Vervang in je eigen framework/cl-functions.lua de volgende twee functies; behoud de rest van het bestand:
+
+```lua
+function Framework.Client.VehicleGiveKeys(plate, vehicleEntity, origin)
+    return exports.ts_bridge:GiveVehicleKeys(vehicleEntity)
+end
+
+function Framework.Client.VehicleRemoveKeys(plate, vehicleEntity, origin)
+    return exports.ts_bridge:RemoveVehicleKeys(vehicleEntity)
+end
+```
+
+De sleutelprovider wordt daarna gekozen in ts_bridge/vehicle_config.lua. Geïmplementeerd: mrnewb en none. Andere sleutelsystemen vereisen eerst een bridge-adapter.
+
+## Webhook voor kentekenbewijzen
+
+Zie docs/WEBHOOKS.md: aparte webhook voor nieuwe/vervangende bewijzen, met kaart-PNG en FiveM-modelafbeelding. URL uitsluitend server-side instellen.

@@ -1,9 +1,15 @@
+# 1.0.6
+
+- Webhook voor kentekenbewijsuitgifte met servergegenereerde PNG en FiveM-modelafbeelding.
+- Aparte created/replacement-webhookroutes; bestaande registration-route blijft fallback.
+- Bestaande configuraties behouden; zie docs/WEBHOOKS.md.
+
 # 1.0.5
 
 - ts_bridge 1.0.1 als centrale koppeling voor framework, inventory, eigendom, garages, sleutels en betalingen.
 - Blijvende betaalmarkering bij onzekere uitkomst; geen automatische herhaling.
 - Configschema is nu 1.0.3; bestaande loketprijs, ACE admin en kaartrevisies blijven behouden.
-- Zie ../VERWIJDERD.md voor verwijderde/verplaatste koppelingen.
+- Zie VERWIJDERD.md voor verwijderde/verplaatste koppelingen.
 
 # 1.0.4
 - JG-compatibele kentekens met spaties; streepjes worden niet meer gegenereerd.

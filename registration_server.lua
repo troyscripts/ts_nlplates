@@ -173,10 +173,11 @@ local function ensureDocument(payload)
                 MySQL.update.await('UPDATE ts_nlplates_documents SET issued = 1 WHERE id = ?', {row.id})
             end
         elseif tonumber(row.issued) ~= 1 then
-            local success, reason = bridge:AddItem(payload.inventoryId, Config.Registration.item, 1,
-                metadataFor(row, ownerOf(plate)))
+            local issuedData = metadataFor(row, ownerOf(plate))
+            local success, reason = bridge:AddItem(payload.inventoryId, Config.Registration.item, 1, issuedData)
             if success then
                 MySQL.update.await('UPDATE ts_nlplates_documents SET issued = 1 WHERE id = ?', {row.id})
+                TSPlateLogIssue(payload.source, issuedData, 'first', vehicle)
             else
                 notify(payload.source, 'Geen ruimte voor het kentekenbewijs. Maak een slot vrij en open het kastje opnieuw.', 'error')
                 print('[ts_nlplates] Bewijs niet toegevoegd: ' .. tostring(reason))
@@ -458,6 +459,7 @@ lib.callback.register('ts_nlplates:document:replace', function(src, rawPlate)
             result = {ok = false, message = 'Opslaan mislukt. Het oude bewijs blijft geldig.'}
             return
         end
+        TSPlateLogIssue(src, data, 'replacement')
         if cost > 0 then
             local paid = bridge:AddSocietyMoney(Config.Replacement.society, cost)
             if not paid or not paid.ok then
