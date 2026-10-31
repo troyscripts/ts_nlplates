@@ -51,6 +51,7 @@ end
 local function formatNPC(entity)
     if not ready or not Config.NPCPlates or npcBusy[entity] or npcDone[entity] then return end
     if not DoesEntityExist(entity) or GetEntityType(entity) ~= 2 then return end
+    if bridge:HasVehicleFakePlate(entity) then return end
     local population = GetEntityPopulationType(entity)
     -- Alleen willekeurig verkeer/geparkeerde NPC's; missie- en scriptvoertuigen overslaan.
     if population < 1 or population > 5 or occupiedByPlayer(entity) then return end
@@ -70,6 +71,7 @@ local function formatNPC(entity)
         local plate = reservePlate()
         if not plate or npcDone[entity] or not DoesEntityExist(entity) or occupiedByPlayer(entity)
             or normalize(GetVehicleNumberPlateText(entity)) ~= oldPlate then return end
+        if bridge:HasVehicleFakePlate(entity) then return end
         local pop = GetEntityPopulationType(entity)
         if pop < 1 or pop > 5 then return end
         SetVehicleNumberPlateText(entity, plate)
@@ -143,7 +145,7 @@ local function ensureDocument(payload)
     end
     -- Na de eerste inventaristoegang staat het kenteken vast voor deze NPC.
     npcDone[vehicle] = true
-    local plate = normalize(GetVehicleNumberPlateText(vehicle))
+    local plate = normalize(bridge:GetVehicleRealPlate(vehicle))
     if plate == '' or #plate > 8 then return end
     if issuing[plate] then return false end
     issuing[plate] = true
@@ -286,7 +288,7 @@ RegisterNetEvent('ts_nlplates:business:register', function(netId)
         or GetGameTimer() - born[vehicle] > 60000 then return end
     if GetPlayerRoutingBucket(src) ~= GetEntityRoutingBucket(vehicle)
         or #(GetEntityCoords(ped) - GetEntityCoords(vehicle)) > 10 then return end
-    local plate = normalize(GetVehicleNumberPlateText(vehicle))
+    local plate = normalize(bridge:GetVehicleRealPlate(vehicle))
     if plate == '' or #plate > 8 then return end
     if bridge:VehicleExists(plate) then return end
     local ok, garages = pcall(function() return bridge:GetJobGarages() end)

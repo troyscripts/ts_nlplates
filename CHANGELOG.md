@@ -1,15 +1,19 @@
+# 1.0.7 — 2026-10-30
+
+- Sky-valse platen gescheiden van registratie; NPC-scan slaat actieve valse platen over; correcte tuninginstructies.
+- Configversie 1.0.4; metadata en actuele documentatie bijgewerkt.
+
 # 1.0.6
 
-- Webhook voor kentekenbewijsuitgifte met servergegenereerde PNG en FiveM-modelafbeelding.
-- Aparte created/replacement-webhookroutes; bestaande registration-route blijft fallback.
-- Bestaande configuraties behouden; zie docs/WEBHOOKS.md.
+- Webhook voor kentekenbewijsuitgifte met servergegenereerde PNG en optionele voertuigfoto.
+- Bestaande configuraties behouden; zie ../WEBHOOK_INSTALLATIE.md.
 
 # 1.0.5
 
 - ts_bridge 1.0.1 als centrale koppeling voor framework, inventory, eigendom, garages, sleutels en betalingen.
 - Blijvende betaalmarkering bij onzekere uitkomst; geen automatische herhaling.
 - Configschema is nu 1.0.3; bestaande loketprijs, ACE admin en kaartrevisies blijven behouden.
-- Zie VERWIJDERD.md voor verwijderde/verplaatste koppelingen.
+- Zie ../VERWIJDERD.md voor verwijderde/verplaatste koppelingen.
 
 # 1.0.4
 - JG-compatibele kentekens met spaties; streepjes worden niet meer gegenereerd.

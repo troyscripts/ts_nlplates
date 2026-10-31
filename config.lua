@@ -1,14 +1,15 @@
 Config = {}
-Config.Version = '1.0.3'
+Config.Version = '1.0.4'
 
 -- Een controle bij starten; handmatig vanuit console: ts_nlplates_check
 Config.VersionCheck = true
 
 -- Onderstaande textures veranderen alleen het uiterlijk.
 -- Nieuwe nummers en kentekenbewijzen worden onderaan ingesteld.
--- JG-menu: 0 = gewoon, 1 = oldtimer, 3 = luxe.
+-- JG/Sky-menu: 0 = gewoon, 6 = oldtimer (build 3095+), 3 = luxe.
+-- Oude oldtimerindices 1/2 worden automatisch naar 6 omgezet.
 -- Andere bestaande basisstijlen krijgen een passende Nederlandse achtergrond.
--- DLC-platen vanaf index 6 worden niet vervangen (zie README).
+-- Index 6 wordt voor oldtimer gebruikt; overige DLC-platen blijven ongewijzigd.
 Config.Textures = {
     { original = 'plate01', style = 'gewoon' },
     { original = 'plate02', style = 'oldtimer' },

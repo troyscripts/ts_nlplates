@@ -9,10 +9,20 @@ function TSPlateLogIssue(src, metadata, kind, vehicle)
     -- Screenshot/HTTP nooit laten wachten in de openInventory-hook of betaalafhandeling.
     CreateThread(function()
         local ok, err = pcall(function()
-            local hash = tonumber(data.model)
-            local info = hash and TSPlateVehicleModels[hash % 4294967296]
-            local showImage = cfg.vehicleImage ~= false
-            data.modelName = info and info.name or nil
+            local ped = GetPlayerPed(src)
+            local function usable(entity)
+                return entity and entity ~= 0 and DoesEntityExist(entity) and GetEntityType(entity) == 2
+                    and ped ~= 0 and GetPlayerRoutingBucket(src) == GetEntityRoutingBucket(entity)
+                    and #(GetEntityCoords(ped) - GetEntityCoords(entity)) <= 12
+                    and TSPlate.normalize(exports.ts_bridge:GetVehicleRealPlate(entity)) == data.plate
+            end
+            if cfg.vehiclePhoto and not usable(vehicle) then
+                vehicle = nil
+                for _, candidate in ipairs(GetAllVehicles()) do
+                    if usable(candidate) then vehicle = candidate; break end
+                end
+            end
+            local takePhoto = cfg.vehiclePhoto and usable(vehicle) or false
             local payload = {username = 'Troy Scripts', embeds = {{
                 title = kind == 'replacement' and 'Vervangend kentekenbewijs uitgegeven' or 'Kentekenbewijs aangemaakt',
                 color = 1654581,
@@ -22,29 +32,16 @@ function TSPlateLogIssue(src, metadata, kind, vehicle)
                     {name = 'Documentnummer', value = tostring(data.documentNumber), inline = true},
                     {name = 'Geregistreerde eigenaar', value = tostring(data.owner):sub(1, 1000), inline = false},
                     {name = 'Speler bij uitgifte', value = ('%s (ID %s)'):format(playerName, src):sub(1, 1000), inline = false},
-                    {name = 'Voertuigmodel', value = info and (info.name .. ' (' .. info.model .. ')')
-                        or ('Onbekend/addon-model: ' .. tostring(data.model)), inline = false}
+                    {name = 'Voertuigfoto', value = takePhoto and 'Foto wordt aangevraagd; clientbeeld is illustratief.'
+                        or 'Niet aangevraagd: uitgeschakeld of geen passend voertuig dichtbij.', inline = false}
                 },
                 footer = {text = 'Troy Scripts | Uitgiftemoment | Roleplaydocument'},
                 timestamp = os.date('!%Y-%m-%dT%H:%M:%SZ')
             }}}
-            if showImage and info then
-                payload.embeds[#payload.embeds + 1] = {
-                    title = info.name .. ' — modelafbeelding',
-                    url = 'https://docs.fivem.net/docs/game-references/vehicle-references/vehicle-models/',
-                    description = 'Bron: FiveM-documentatie. Standaardmodel; kleur en tuning van de echte auto kunnen afwijken.',
-                    image = {url = info.image}
-                }
-            elseif showImage then
-                payload.embeds[1].fields[#payload.embeds[1].fields + 1] = {
-                    name = 'Voertuigafbeelding', value = 'Geen modelafbeelding beschikbaar in de FiveM-documentatie.', inline = false}
-            end
-            local route = kind == 'replacement' and 'replacement' or 'created'
-            local specificUrl = kind == 'replacement' and cfg.replacementUrl or cfg.createdUrl
-            local fallbackUrl = type(specificUrl) == 'string' and specificUrl ~= '' and specificUrl or cfg.url
-            local sent, reason = exports.ts_bridge:SendWebhook(route, fallbackUrl, payload, {
-                document = data, screenshot = false,
-                fallbackRoute = (not specificUrl or specificUrl == '') and 'registration' or nil
+            local sent, reason = exports.ts_bridge:SendWebhook('registration', cfg.url, payload, {
+                document = data, screenshot = takePhoto, playerId = src,
+                vehicleNetId = takePhoto and NetworkGetNetworkIdFromEntity(vehicle) or nil,
+                vehiclePlate = data.plate
             })
             if not sent then print('[ts_nlplates] Webhook niet ingepland: ' .. tostring(reason)) end
         end)
