@@ -1,10 +1,9 @@
-shared_script '@ElectronAC/src/include/shared.lua'
 fx_version 'cerulean'
 game 'gta5'
 
 author 'Troy Scripts'
 description 'Nederlandse kentekens en toonbaar kentekenbewijs voor ESX / ox_inventory'
-version '1.0.7'
+version '1.0.8'
 
 shared_scripts { '@ox_lib/init.lua', 'config.lua', 'plate_format.lua' }
 client_scripts { 'client.lua', 'registration_client.lua' }

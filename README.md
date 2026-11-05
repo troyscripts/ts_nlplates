@@ -1,4 +1,4 @@
-# Troy Scripts — ts_nlplates 1.0.7
+# Troy Scripts — ts_nlplates 1.0.8
 
 Nederlandse kentekens en toonbare kentekenbewijzen voor ESX/ox_inventory.
 Configversie: 1.0.4.
@@ -127,3 +127,9 @@ Zie ../WEBHOOK_INSTALLATIE.md: kaartafbeelding bij eerste en vervangende uitgift
 
 
 Zie [SKY-MECHANIC.md](SKY-MECHANIC.md) voor Sky-ondersteuning en installatie.
+
+## Bijwerken naar 1.0.8
+
+Bewaar je eigen config.lua en webhook_config.lua. Configversie blijft 1.0.4. Verwijder bij een bestaande installatie alle oude Lua-, SQL-, JSON- en Markdownbestanden uit `textures/`; behoud de zes PNG-bestanden. Alleen het fxmanifest.lua in de hoofdmap hoort bij deze resource. De dubbele scriptkopie onder textures is verwijderd.
+
+De openbare versie bevat geen vaste ElectronAC-includeregel meer. Gebruik je ElectronAC op je server, behoud of herstel dan de integratie die jouw anti-cheat-installatie vereist. JG- en Sky-koppelingen zijn ongewijzigd.

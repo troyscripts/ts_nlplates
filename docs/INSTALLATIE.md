@@ -123,3 +123,7 @@ Nog live te testen op jouw server:
 - Toon het oude bewijs aan een tweede speler: NIETIG VERKLAARD.
 - Haal een bedrijfsauto op en controleer de bedrijfsnaam.
 - Herstart: loket, documentgeldigheid en kentekens blijven behouden.
+
+## Update 1.0.8
+
+Behoud je eigen config.lua en webhook_config.lua. Verwijder oude scriptbestanden onder textures (Lua/SQL/JSON/Markdown); laat de zes PNG's staan. Plaats alleen het hoofdmanifest in de resource-root. Herstel indien nodig de ElectronAC-integratie volgens je lokale anti-cheat-installatie. Er is voor deze onderhoudsupdate geen SQL-migratie nodig.
