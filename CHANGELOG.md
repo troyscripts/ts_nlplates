@@ -1,3 +1,8 @@
+# 1.0.8 — 2026-11-05
+- Oude scriptkopie uit textures verwijderd; de zes kentekenafbeeldingen blijven aanwezig.
+- Servergebonden ElectronAC-include uit het openbare manifest verwijderd.
+- Configversie 1.0.4 en JG/Sky-functionaliteit ongewijzigd.
+
 # 1.0.7 — 2026-10-30
 
 - Sky-valse platen gescheiden van registratie; NPC-scan slaat actieve valse platen over; correcte tuninginstructies.
