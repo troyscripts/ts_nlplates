@@ -126,4 +126,4 @@ Nog live te testen op jouw server:
 
 ## Update 1.0.8
 
-Behoud je eigen config.lua en webhook_config.lua. Verwijder oude scriptbestanden onder textures (Lua/SQL/JSON/Markdown); laat de zes PNG's staan. Plaats alleen het hoofdmanifest in de resource-root. Herstel indien nodig de ElectronAC-integratie volgens je lokale anti-cheat-installatie. Er is voor deze onderhoudsupdate geen SQL-migratie nodig.
+Behoud je eigen config.lua en webhook_config.lua. Verwijder oude scriptbestanden onder textures (Lua/SQL/JSON/Markdown); laat de zes PNG's staan. Plaats alleen het hoofdmanifest in de resource-root. ElectronAC is geen dependency; een servergebonden includeregel is niet nodig. Er is voor deze onderhoudsupdate geen SQL-migratie nodig.

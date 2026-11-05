@@ -132,4 +132,4 @@ Zie [SKY-MECHANIC.md](SKY-MECHANIC.md) voor Sky-ondersteuning en installatie.
 
 Bewaar je eigen config.lua en webhook_config.lua. Configversie blijft 1.0.4. Verwijder bij een bestaande installatie alle oude Lua-, SQL-, JSON- en Markdownbestanden uit `textures/`; behoud de zes PNG-bestanden. Alleen het fxmanifest.lua in de hoofdmap hoort bij deze resource. De dubbele scriptkopie onder textures is verwijderd.
 
-De openbare versie bevat geen vaste ElectronAC-includeregel meer. Gebruik je ElectronAC op je server, behoud of herstel dan de integratie die jouw anti-cheat-installatie vereist. JG- en Sky-koppelingen zijn ongewijzigd.
+De openbare versie bevat geen vaste ElectronAC-includeregel meer. ElectronAC of een andere anti-cheatresource is niet vereist; er hoeft geen Gemert RP-specifieke includeregel te worden toegevoegd. JG- en Sky-koppelingen zijn ongewijzigd.
