@@ -1,3 +1,12 @@
+# 1.1.0 — 2026-11-07
+- Ingevulde Discord-webhook-URL verwijderd uit de openbare standaardconfig; stel deze lokaal in.
+- Code verdeeld over client/, server/, shared/ en config/; SQL naar sql/.
+- Alle documentatie behalve README naar docs/; documentatielinks bijgewerkt.
+- Manifestentries aangepast met behoud van laadvolgorde en server-only webhooks.
+- Configversie blijft 1.0.5; onjuiste verwachte versie 1.0.4 in de checker hersteld.
+- Bestaande version.json-URL, exports, events, NUI, textures en stream-paden behouden.
+- Update: eigen instellingen overnemen naar config/config.lua en config/webhooks.lua.
+
 # 1.0.9 — 2026-11-06
 - Configversie 1.0.5; instelbare taximodellen, jobs en garages.
 - Blauwe taxiplaten voor model taxi en gecontroleerde taxi-jobgaragevoertuigen.
@@ -18,14 +27,14 @@
 # 1.0.6
 
 - Webhook voor kentekenbewijsuitgifte met servergegenereerde PNG en optionele voertuigfoto.
-- Bestaande configuraties behouden; zie ../WEBHOOK_INSTALLATIE.md.
+- Bestaande configuraties behouden; zie [webhook-installatie](WEBHOOK_INSTALLATIE.md).
 
 # 1.0.5
 
 - ts_bridge 1.0.1 als centrale koppeling voor framework, inventory, eigendom, garages, sleutels en betalingen.
 - Blijvende betaalmarkering bij onzekere uitkomst; geen automatische herhaling.
 - Configschema is nu 1.0.3; bestaande loketprijs, ACE admin en kaartrevisies blijven behouden.
-- Zie ../VERWIJDERD.md voor verwijderde/verplaatste koppelingen.
+- Koppelingen zijn naar ts_bridge verplaatst; zie de [README](../README.md).
 
 # 1.0.4
 - JG-compatibele kentekens met spaties; streepjes worden niet meer gegenereerd.

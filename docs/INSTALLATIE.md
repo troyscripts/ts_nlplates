@@ -1,11 +1,11 @@
 # Aanvullende installatie en migratie
 
-Lees eerst ../../INSTALLATIE.md voor de bridge-update 1.0.1 en nlplates 1.0.5.
+Lees eerst de [README](../README.md) voor dependencies en koppelingen. De huidige scriptversie is 1.1.0; configversie 1.0.5.
 
 ## Bestaande kentekens met streepjes omzetten
 
 **Alleen het formaat aanpassen repareert een al opgeslagen voertuig niet.**
-De hulpresource `ts_nlplates_migrate` is daarom meegeleverd. Deze wordt niet permanent gestart.
+De hulpresource `ts_nlplates_migrate` is daarvoor apart nodig (niet meegeleverd in deze repository). Deze wordt niet permanent gestart.
 
 1. Zet de server in onderhoud zodat niemand kan joinen; maak een databaseback-up.
 2. Zorg dat alle spelers uitgelogd zijn, zodat inventarissen zijn opgeslagen.
@@ -37,13 +37,13 @@ Externe opslag, KVP-bestanden, versleutelde data en hashes zijn niet te reconstr
 MrNewbVehicleKeys bevat versleutelde onderdelen: de omzetting van iedere mogelijke interne sleutelopslag
 kan daarom niet worden gegarandeerd. Test na de omzetting garage, slot en sleutelitems.
 Andere eigen scripts met afwijkende kolomnamen hebben een aanvullende koppeling nodig.
-De install.sql zelf zet geen voertuigkentekens om.
+De `sql/install.sql` zelf zet geen voertuigkentekens om.
 
 ## Kentekenloket plaatsen
 
 De server controleert je frameworkgroep via ts_bridge. De groepen admin, owner, superadmin en god mogen het commando gebruiken. Een gewone user niet. Hiervoor is geen aparte ACE-regel nodig.
 
-Bijwerken vanaf de vorige configuratie: verwijder Replacement.adminAce en voeg Replacement.adminGroups toe zoals hieronder. Zet Config.Version op 1.0.4.
+Bijwerken vanaf de vorige configuratie: verwijder Replacement.adminAce en voeg Replacement.adminGroups toe zoals hieronder. Zet Config.Version op 1.0.5 en behoud ook de taxi-instellingen.
 
 - Ga naar de gewenste locatie en gebruik **/kentekenpunt**.
 - Verplaatsen: voer hetzelfde commando op de nieuwe locatie uit.
@@ -57,7 +57,7 @@ Alleen de geregistreerde eigenaar of een werknemer met dezelfde job en voldoende
 
 ## Kosten en politiebetaling
 
-In ts_nlplates/config.lua:
+In `ts_nlplates/config/config.lua`:
 
 ```lua
 Config.Replacement = {
@@ -124,9 +124,11 @@ Nog live te testen op jouw server:
 - Haal een bedrijfsauto op en controleer de bedrijfsnaam.
 - Herstart: loket, documentgeldigheid en kentekens blijven behouden.
 
-## Update 1.0.9
+## Update 1.1.0
 
-Behoud je eigen config.lua en webhook_config.lua. Verwijder oude scriptbestanden onder textures (Lua/SQL/JSON/Markdown); laat de zes PNG's staan. Plaats alleen het hoofdmanifest in de resource-root. ElectronAC is geen dependency; een servergebonden includeregel is niet nodig. Er is voor deze onderhoudsupdate geen SQL-migratie nodig.
+Maak een back-up en vervang de volledige resource-map inclusief `fxmanifest.lua`. Neem je eigen instellingen uit de oude `config.lua` over in `config/config.lua`; neem je webhookinstellingen uit `webhook_config.lua` over in `config/webhooks.lua`. De oude bestanden in de hoofdmap worden niet meer geladen. Configversie blijft 1.0.5. Zie de [mapindeling](../README.md#mapindeling).
+
+Voor deze herindeling is geen SQL-migratie nodig. Bij een nieuwe installatie staat het databasescript in `sql/install.sql`. Behoud alle acht PNG-bestanden in `textures/` en het font in `stream/`.
 
 ## Taxiplaten — 1.0.9 / config 1.0.5
 
@@ -134,7 +136,7 @@ Behoud je eigen config.lua en webhook_config.lua. Verwijder oude scriptbestanden
 - Voeg bijvoorbeeld toe: `models = { 'taxi', 'schafter2', 'stretch' }`.
 - `Config.Taxi.jobs` en `Config.Taxi.garages` herkennen bedrijfsvoertuigen uit de gecontroleerde JG jobgarage-spawner. Taxi Gemert en job taxi zijn ingesteld. Een andere jobnaam/garagenaam kun je hier toevoegen.
 - Garagevoertuigen worden gecontroleerd op job, rang, model, afstand en recent spawnen. Alleen in een taxi gaan zitten maakt een privévoertuig geen bedrijfsauto.
-- JG's bestaande `TakeOutVehicle:config`-event wordt direct opgevangen. De meegeleverde JG bevat de benodigde serverexport `TSGetJobGarages` al; JG hoeft niet vervangen te worden. ts_bridge moet de bestaande `GetJobGarages`-adapter beschikbaar hebben.
+- JG's bestaande `TakeOutVehicle:config`-event wordt direct opgevangen. Controleer de benodigde serverexport `TSGetJobGarages` in jouw JG; zie de [README](../README.md). ts_bridge moet de bestaande `GetJobGarages`-adapter beschikbaar hebben.
 - Plaatindex 4 is nu exclusief taxi (blauw, donkere letters). Gewone voertuigen met oude index 4 worden naar gewone index 0 gezet. Gewoon 0, oldtimer 6 en luxe 3 blijven beschikbaar. De keuze van taxi's wordt automatisch hersteld na tuning.
 - Taxi-kentekenbewijzen krijgen een blauwe stijl en een volledig blauw kentekenvlak zonder EU-strook. Bestaande bewijzen worden bij bekijken of openen van het dashboardkastje bijgewerkt; een nieuwe kaart is niet nodig.
 - Kentekennummers blijven gelijk; geen omzetting van bestaande kentekens of nieuwe SQL nodig. De bestaande bedrijventabel wordt gebruikt.

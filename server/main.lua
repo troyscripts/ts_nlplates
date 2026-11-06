@@ -1,5 +1,5 @@
 local resource = GetCurrentResourceName()
-local expectedConfig = '1.0.4'
+local expectedConfig = '1.0.5'
 local repository = 'https://github.com/troyscripts/ts_nlplates'
 local raw = 'https://raw.githubusercontent.com/troyscripts/ts_nlplates/'
 local busy = false
@@ -35,7 +35,7 @@ end
 local function checkVersion()
     local current = status()
     if not Config.VersionCheck then
-        log('Versiechecker uitgeschakeld in config.lua.')
+        log('Versiechecker uitgeschakeld in config/config.lua.')
         return
     end
     if busy then log('Versiecontrole loopt al.'); return end

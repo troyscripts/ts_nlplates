@@ -1,4 +1,4 @@
-# Troy Scripts — ts_nlplates 1.0.9
+# Troy Scripts — ts_nlplates 1.1.0
 
 Nederlandse kentekens en toonbare kentekenbewijzen voor ESX/ox_inventory.
 Configversie: 1.0.5.
@@ -10,14 +10,14 @@ Configversie: 1.0.5.
 - Voor betaalde vervangingen: esx_addonaccount met society_police.
 - Optionele meegeleverde aansluiting: JG Dealerships en JG Advanced Garages.
 - ts_bridge 1.0.1, met de meegeleverde voertuigadapters voor JG en MrNewbVehicleKeys.
-- De map ts_nlplates in dit pakket bevat ook de oorspronkelijke client.lua, stream/ en textures/.
+- De map ts_nlplates in dit pakket bevat ook de client/main.lua, stream/ en textures/.
 
-Koppelingen lopen nu via ts_bridge. Zie ../INSTALLATIE.md en ../ts_bridge/VOERTUIGEN.md voor centrale selectie en uitbreiding.
+Koppelingen lopen nu via ts_bridge. Zie [installatie](docs/INSTALLATIE.md) en de voertuigdocumentatie van jouw ts_bridge-versie voor centrale selectie en uitbreiding.
 
 ## Installatie
 
-Lees **docs/INSTALLATIE.md** voor de update, SQL, eenmalige omzetting van bestaande streepjeskentekens,
-plaatsing van het loket en tests. Importeer install.sql in dezelfde database als ESX.
+Lees [docs/INSTALLATIE.md](docs/INSTALLATIE.md) voor de update, SQL, eenmalige omzetting van bestaande streepjeskentekens,
+plaatsing van het loket en tests. Importeer `sql/install.sql` in dezelfde database als ESX.
 Behoud exact de resourcenaam ts_nlplates.
 
 Start na oxmysql, ox_lib, ESX, esx_addonaccount, ox_inventory en ts_bridge; start JG daarna.
@@ -39,7 +39,7 @@ Voeg aan data/items.lua toe:
 },
 ```
 
-Neem ook het icoon kentekenbewijs.png uit dit pakket over naar web/images.
+Plaats een eigen icoon `kentekenbewijs.png` in `ox_inventory/web/images/` (niet meegeleverd).
 De server maakt het bewijs automatisch aan bij de eerste opening van een ondersteund dashboardkastje.
 Een meegenomen bewijs wordt niet bij iedere opening opnieuw aangemaakt.
 
@@ -59,7 +59,7 @@ if seed == Config.PlateFormat or seed == nil then
 end
 ```
 
-Dit staat al in het meegeleverde framework/sv-functions.lua. Vervang het oudere blok; voeg het niet dubbel toe.
+Pas dit aan in je eigen JG-resource. Vervang een eventueel ouder blok; voeg het niet dubbel toe.
 Proefritten behouden hun eigen seed. De centrale export reserveert een uniek nummer.
 
 ### JG Advanced Garages — bedrijfsnaam bij spawners
@@ -123,16 +123,39 @@ JG-sleutelfuncties moeten eveneens naar de bridge verwijzen. Zie de hoofdhandlei
 
 ## Webhook voor kentekenbewijzen
 
-Zie ../WEBHOOK_INSTALLATIE.md: kaartafbeelding bij eerste en vervangende uitgifte, met optionele voertuigfoto. URL uitsluitend server-side instellen.
+Zie [webhook-installatie](docs/WEBHOOK_INSTALLATIE.md): kaartafbeelding bij eerste en vervangende uitgifte, met optionele voertuigfoto. URL uitsluitend server-side instellen.
 
 
-Zie [SKY-MECHANIC.md](SKY-MECHANIC.md) voor Sky-ondersteuning en installatie.
+Zie [SKY-MECHANIC.md](docs/SKY-MECHANIC.md) voor Sky-ondersteuning en installatie.
 
-## Bijwerken naar 1.0.9
+## Bijwerken naar 1.1.0
 
-Bewaar je eigen config.lua en webhook_config.lua. Configversie blijft 1.0.4. Verwijder bij een bestaande installatie alle oude Lua-, SQL-, JSON- en Markdownbestanden uit `textures/`; behoud de zes PNG-bestanden. Alleen het fxmanifest.lua in de hoofdmap hoort bij deze resource. De dubbele scriptkopie onder textures is verwijderd.
+Maak een back-up en vervang de volledige resource-map. Neem je eigen instellingen uit de oude `config.lua` over in `config/config.lua` en uit `webhook_config.lua` in `config/webhooks.lua`. Configversie blijft **1.0.5**: de instellingen zijn niet veranderd. Gebruik het nieuwe manifest; alleen oude bestanden overschrijven is niet voldoende bij deze mapverplaatsingen. Er is geen nieuwe SQL-migratie nodig.
 
-De openbare versie bevat geen vaste ElectronAC-includeregel meer. ElectronAC of een andere anti-cheatresource is niet vereist; er hoeft geen Gemert RP-specifieke includeregel te worden toegevoegd. JG- en Sky-koppelingen zijn ongewijzigd.
+## Mapindeling
+
+| Map/bestand | Inhoud |
+| --- | --- |
+| `client/` | Kentekenweergave en kentekenbewijsinterface |
+| `server/` | Versiecontrole, registratie en webhookverwerking |
+| `shared/` | Kentekenformaat en gedeelde taxiherkenning |
+| `config/config.lua` | Gedeelde instellingen |
+| `config/webhooks.lua` | Alleen server-side geladen webhookinstellingen |
+| `sql/` | Database-installatie |
+| `docs/` | Installatie, koppelingen, anti-cheat en changelog |
+| `html/` | Kentekenbewijsinterface (NUI) |
+| `textures/` | Kentekenafbeeldingen |
+| `stream/` | Gestreamd kentekenfont |
+
+`fxmanifest.lua` blijft in de hoofdmap voor FiveM. `version.json` blijft daar voor bestaande versiecheckers.
+
+## Documentatie
+
+- [Installatie en migratie](docs/INSTALLATIE.md)
+- [Sky Mechanic](docs/SKY-MECHANIC.md)
+- [Webhooks](docs/WEBHOOK_INSTALLATIE.md)
+- [Electron AntiCheat](docs/electron-anticheat.md)
+- [Changelog](docs/CHANGELOG.md)
 
 ## Taxiplaten — 1.0.9 / config 1.0.5
 
@@ -140,7 +163,7 @@ De openbare versie bevat geen vaste ElectronAC-includeregel meer. ElectronAC of 
 - Voeg bijvoorbeeld toe: `models = { 'taxi', 'schafter2', 'stretch' }`.
 - `Config.Taxi.jobs` en `Config.Taxi.garages` herkennen bedrijfsvoertuigen uit de gecontroleerde JG jobgarage-spawner. Taxi Gemert en job taxi zijn ingesteld. Een andere jobnaam/garagenaam kun je hier toevoegen.
 - Garagevoertuigen worden gecontroleerd op job, rang, model, afstand en recent spawnen. Alleen in een taxi gaan zitten maakt een privévoertuig geen bedrijfsauto.
-- JG's bestaande `TakeOutVehicle:config`-event wordt direct opgevangen. De meegeleverde JG bevat de benodigde serverexport `TSGetJobGarages` al; JG hoeft niet vervangen te worden. ts_bridge moet de bestaande `GetJobGarages`-adapter beschikbaar hebben.
+- JG's bestaande `TakeOutVehicle:config`-event wordt direct opgevangen. Controleer of jouw JG de benodigde serverexport `TSGetJobGarages` bevat; zie de koppeling hierboven. ts_bridge moet de bestaande `GetJobGarages`-adapter beschikbaar hebben.
 - Plaatindex 4 is nu exclusief taxi (blauw, donkere letters). Gewone voertuigen met oude index 4 worden naar gewone index 0 gezet. Gewoon 0, oldtimer 6 en luxe 3 blijven beschikbaar. De keuze van taxi's wordt automatisch hersteld na tuning.
 - Taxi-kentekenbewijzen krijgen een blauwe stijl en een volledig blauw kentekenvlak zonder EU-strook. Bestaande bewijzen worden bij bekijken of openen van het dashboardkastje bijgewerkt; een nieuwe kaart is niet nodig.
 - Kentekennummers blijven gelijk; geen omzetting van bestaande kentekens of nieuwe SQL nodig. De bestaande bedrijventabel wordt gebruikt.
