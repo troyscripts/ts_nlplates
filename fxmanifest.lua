@@ -3,9 +3,9 @@ game 'gta5'
 
 author 'Troy Scripts'
 description 'Nederlandse kentekens en toonbaar kentekenbewijs voor ESX / ox_inventory'
-version '1.0.8'
+version '1.0.9'
 
-shared_scripts { '@ox_lib/init.lua', 'config.lua', 'plate_format.lua' }
+shared_scripts { '@ox_lib/init.lua', 'config.lua', 'plate_format.lua', 'taxi_shared.lua' }
 client_scripts { 'client.lua', 'registration_client.lua' }
 server_scripts { '@oxmysql/lib/MySQL.lua', 'server.lua', 'webhook_config.lua', 'webhook_server.lua', 'registration_server.lua' }
 ui_page 'html/index.html'

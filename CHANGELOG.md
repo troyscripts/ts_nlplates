@@ -1,3 +1,10 @@
+# 1.0.9 — 2026-11-06
+- Configversie 1.0.5; instelbare taximodellen, jobs en garages.
+- Blauwe taxiplaten voor model taxi en gecontroleerde taxi-jobgaragevoertuigen.
+- Blauw kentekenbewijs, ook voor bestaande documenten; geen nieuwe kaart nodig.
+- Directe JG-garagemelding en herstel via gesynchroniseerde entiteitsstatus.
+- Plaatindex 4 gereserveerd voor taxi; normale oude index 4 naar 0.
+
 # 1.0.8 — 2026-11-05
 - Oude scriptkopie uit textures verwijderd; de zes kentekenafbeeldingen blijven aanwezig.
 - Servergebonden ElectronAC-include uit het openbare manifest verwijderd.

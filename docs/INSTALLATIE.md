@@ -124,6 +124,26 @@ Nog live te testen op jouw server:
 - Haal een bedrijfsauto op en controleer de bedrijfsnaam.
 - Herstart: loket, documentgeldigheid en kentekens blijven behouden.
 
-## Update 1.0.8
+## Update 1.0.9
 
 Behoud je eigen config.lua en webhook_config.lua. Verwijder oude scriptbestanden onder textures (Lua/SQL/JSON/Markdown); laat de zes PNG's staan. Plaats alleen het hoofdmanifest in de resource-root. ElectronAC is geen dependency; een servergebonden includeregel is niet nodig. Er is voor deze onderhoudsupdate geen SQL-migratie nodig.
+
+## Taxiplaten — 1.0.9 / config 1.0.5
+
+- `Config.Taxi.models` bevat spawnnamen die altijd een blauwe taxiplaat krijgen, ook als NPC of persoonlijk voertuig. Standaard: `taxi`.
+- Voeg bijvoorbeeld toe: `models = { 'taxi', 'schafter2', 'stretch' }`.
+- `Config.Taxi.jobs` en `Config.Taxi.garages` herkennen bedrijfsvoertuigen uit de gecontroleerde JG jobgarage-spawner. Taxi Gemert en job taxi zijn ingesteld. Een andere jobnaam/garagenaam kun je hier toevoegen.
+- Garagevoertuigen worden gecontroleerd op job, rang, model, afstand en recent spawnen. Alleen in een taxi gaan zitten maakt een privévoertuig geen bedrijfsauto.
+- JG's bestaande `TakeOutVehicle:config`-event wordt direct opgevangen. De meegeleverde JG bevat de benodigde serverexport `TSGetJobGarages` al; JG hoeft niet vervangen te worden. ts_bridge moet de bestaande `GetJobGarages`-adapter beschikbaar hebben.
+- Plaatindex 4 is nu exclusief taxi (blauw, donkere letters). Gewone voertuigen met oude index 4 worden naar gewone index 0 gezet. Gewoon 0, oldtimer 6 en luxe 3 blijven beschikbaar. De keuze van taxi's wordt automatisch hersteld na tuning.
+- Taxi-kentekenbewijzen krijgen een blauwe stijl en een volledig blauw kentekenvlak zonder EU-strook. Bestaande bewijzen worden bij bekijken of openen van het dashboardkastje bijgewerkt; een nieuwe kaart is niet nodig.
+- Kentekennummers blijven gelijk; geen omzetting van bestaande kentekens of nieuwe SQL nodig. De bestaande bedrijventabel wordt gebruikt.
+
+### Installeren en testen
+1. Maak een backup en vervang de volledige map `ts_nlplates` door deze versie.
+2. Neem eigen instellingen over in de NIEUWE config (versie 1.0.5), inclusief de nieuwe taxi-texture bij `plate05` en `Config.Taxi`.
+3. Herstart de server, of herstart ts_nlplates en spawn testvoertuigen opnieuw.
+4. Test taxi uit Taxi Gemert, een extra model uit die garage, een los gespawnde taxi en een gewone privéauto. Controleer ook met een tweede speler.
+5. Open het dashboardkastje en bekijk/toon het kentekenbewijs. Controleer vervolgens terugplaatsen/uitnemen en een resourceherstart.
+
+Voertuigen met een eigen vaste kentekentexture in het voertuigmodel kunnen de standaard GTA-plaattextures negeren. Visuele controle in FiveM blijft nodig.

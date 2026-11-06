@@ -161,3 +161,9 @@ if Config.Replacement.enabled then
         end
     end)
 end
+
+-- Rechtstreekse JG-configmelding; werkt ook zonder een bridge-spawnmelding.
+AddEventHandler('jg-advancedgarages:client:TakeOutVehicle:config', function(vehicle, _, garageType)
+    if not DoesEntityExist(vehicle) then return end
+    TriggerEvent('ts_bridge:vehicle:jobSpawned', vehicle)
+end)

@@ -4,6 +4,7 @@ local npcBusy, npcDone, issuing, lastUse = {}, {}, {}, {}
 local normalize = TSPlate.normalize
 local replacementBusy, replacementUse, born = {}, {}, {}
 local counter
+local taxiBusinesses = {}
 local versionsQuery = "SELECT revision, DATE_FORMAT(issued_at, '%d-%m-%Y') AS issued_date FROM ts_nlplates_document_versions WHERE document_id = ?"
 
 local function loadVersion(row)
@@ -118,6 +119,8 @@ end
 local function ownerOf(plate) return ownership(plate).name end
 
 local function metadataFor(row, owner, old)
+    local business = MySQL.single.await('SELECT job, garage FROM ts_nlplates_business_vehicles WHERE plate = ?', {row.plate})
+    local taxi = TSTaxi.isModel(row.model) or (business and TSTaxi.isBusiness(business.job, business.garage)) or false
     local revision = old and (tonumber(old.revision) or 1) or row.revision or 1
     old = old or {}
     local valid = revision == (row.revision or 1)
@@ -127,7 +130,7 @@ local function metadataFor(row, owner, old)
     return {
         plate = row.plate, documentId = tostring(row.id), revision = revision,
         documentNumber = number, valid = valid, status = status,
-        model = tonumber(row.model), owner = owner,
+        model = tonumber(row.model), owner = owner, plateStyle = taxi and 'taxi' or 'gewoon',
         issued = valid and (row.current_date or row.issued_date) or old.issued or row.issued_date,
         description = ('%s | %s\nKenteken: %s\nGeregistreerde eigenaar: %s'):format(status, number, row.plate, owner)
     }
@@ -311,6 +314,10 @@ RegisterNetEvent('ts_nlplates:business:register', function(netId)
                         INSERT INTO ts_nlplates_business_vehicles (plate, job, model, garage) VALUES (?, ?, ?, ?)
                         ON DUPLICATE KEY UPDATE job = VALUES(job), model = VALUES(model), garage = VALUES(garage)
                     ]], {plate, job.name, tostring(model), name})
+                    taxiBusinesses[plate] = TSTaxi.isBusiness(job.name, name) and tostring(model) or nil
+                    if DoesEntityExist(vehicle) then
+                        Entity(vehicle).state:set('tsTaxiPlate', taxiBusinesses[plate] ~= nil, true)
+                    end
                     return
                 end
             end
@@ -568,5 +575,31 @@ CreateThread(function()
                 Wait(0)
             end
         end
+    end
+end)
+
+-- Herstel geregistreerde taxi's na uit-/instreamen en resource/serverherstart.
+-- Eén databaselezing bij starten; geen query per voertuig per scan.
+CreateThread(function()
+    while not ready do Wait(500) end
+    for _, row in ipairs(MySQL.query.await('SELECT plate, model, job, garage FROM ts_nlplates_business_vehicles') or {}) do
+        if TSTaxi.isBusiness(row.job, row.garage) then taxiBusinesses[row.plate] = tostring(row.model) end
+    end
+    while true do
+        if Config.Taxi and Config.Taxi.enabled then
+            for _, vehicle in ipairs(GetAllVehicles()) do
+                if DoesEntityExist(vehicle) then
+                    local plate = normalize(bridge:GetVehicleRealPlate(vehicle))
+                    local savedModel = tonumber(taxiBusinesses[plate])
+                    local model = GetEntityModel(vehicle)
+                    local taxi = TSTaxi.isModel(model) or (savedModel ~= nil and
+                        (savedModel & 0xffffffff) == (model & 0xffffffff))
+                    if Entity(vehicle).state.tsTaxiPlate ~= taxi then
+                        Entity(vehicle).state:set('tsTaxiPlate', taxi, true)
+                    end
+                end
+            end
+        end
+        Wait(2000)
     end
 end)

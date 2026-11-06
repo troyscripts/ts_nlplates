@@ -19,3 +19,13 @@ footer{display:flex;gap:10px;justify-content:space-between;padding:16px 24px;bor
 #card.invalid{border:3px solid #b32727}
 #card.invalid #validity{background:#b32727;color:#fff;font-size:21px;letter-spacing:3px;text-align:center}
 #card.invalid .plate{opacity:.65}
+
+#card.taxi{background:#e5f5fc;color:#071e29}
+#card.taxi header{background:#086488}
+#card.taxi .plate{background:#35b9e5;border-color:#111}
+#card.taxi .plate strong{color:#050505}
+#card.taxi .caption,#card.taxi dt,#card.taxi footer{color:#315c70}
+#card.taxi footer{border-color:#b0d9eb}
+#card.taxi:not(.invalid) #validity{background:#c1e8f7;color:#123a4d}
+
+#card.taxi .plate span{display:none}

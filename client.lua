@@ -90,14 +90,23 @@ end)
 CreateThread(function()
     while true do
         Wait(1000)
-        if oldtimerActive then
+        if oldtimerActive or (Config.Taxi and Config.Taxi.enabled) then
             for _, vehicle in ipairs(GetGamePool('CVehicle')) do
                 -- Alleen de eigenaar schrijft gesynchroniseerde voertuiggegevens.
                 -- Geen controle opeisen, kentekentekst wijzigen of database bijwerken.
                 if DoesEntityExist(vehicle)
-                    and (not NetworkGetEntityIsNetworked(vehicle) or NetworkHasControlOfEntity(vehicle))
-                    and legacyOldtimerIndexes[GetVehicleNumberPlateTextIndex(vehicle)] then
-                    SetVehicleNumberPlateTextIndex(vehicle, oldtimerIndex)
+                    and (not NetworkGetEntityIsNetworked(vehicle) or NetworkHasControlOfEntity(vehicle)) then
+                    local index = GetVehicleNumberPlateTextIndex(vehicle)
+                    local taxi = Config.Taxi and Config.Taxi.enabled and
+                        (TSTaxi.isModel(GetEntityModel(vehicle)) or Entity(vehicle).state.tsTaxiPlate == true)
+                    if taxi and index ~= 4 then
+                        SetVehicleNumberPlateTextIndex(vehicle, 4)
+                    elseif not taxi and index == 4 then
+                        -- Index 4 was vroeger gewoon; reserveer hem uitsluitend voor taxi's.
+                        SetVehicleNumberPlateTextIndex(vehicle, 0)
+                    elseif oldtimerActive and legacyOldtimerIndexes[index] then
+                        SetVehicleNumberPlateTextIndex(vehicle, oldtimerIndex)
+                    end
                 end
             end
         end

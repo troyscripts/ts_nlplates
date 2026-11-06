@@ -1,5 +1,5 @@
 Config = {}
-Config.Version = '1.0.4'
+Config.Version = '1.0.5'
 
 -- Een controle bij starten; handmatig vanuit console: ts_nlplates_check
 Config.VersionCheck = true
@@ -8,14 +8,14 @@ Config.VersionCheck = true
 -- Nieuwe nummers en kentekenbewijzen worden onderaan ingesteld.
 -- JG/Sky-menu: 0 = gewoon, 6 = oldtimer (build 3095+), 3 = luxe.
 -- Oude oldtimerindices 1/2 worden automatisch naar 6 omgezet.
--- Andere bestaande basisstijlen krijgen een passende Nederlandse achtergrond.
+-- Index 4 = taxi; andere bestaande basisstijlen krijgen een Nederlandse achtergrond.
 -- Index 6 wordt voor oldtimer gebruikt; overige DLC-platen blijven ongewijzigd.
 Config.Textures = {
     { original = 'plate01', style = 'gewoon' },
     { original = 'plate02', style = 'oldtimer' },
     { original = 'plate03', style = 'oldtimer' },
     { original = 'plate04', style = 'luxe' },
-    { original = 'plate05', style = 'gewoon' },
+    { original = 'plate05', style = 'taxi' },
     { original = 'yankton_plate', style = 'gewoon' },
 }
 
@@ -54,4 +54,14 @@ Config.Replacement = {
     blip = true,
     companyMinGrade = 3, -- bedrijfsbewijs vervangen: eigen job + minimaal deze rang
     cooldownSeconds = 30,
+}
+
+-- Taxiplaten: index 4 is gereserveerd voor blauw met donkere letters.
+-- Voeg spawnnamen toe; deze modellen krijgen ALTIJD een taxiplaat (ook NPC's).
+-- Andere modellen uit een gecontroleerde taxi-jobgarage krijgen dit automatisch.
+Config.Taxi = {
+    enabled = true,
+    models = { 'taxi' }, -- voorbeeld: 'taxi', 'schafter2', 'stretch'
+    jobs = { taxi = true },
+    garages = { ['Taxi Gemert'] = true },
 }

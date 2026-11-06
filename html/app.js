@@ -4,6 +4,7 @@ window.addEventListener('message', ({data}) => {
     if (data?.action === 'close') { card.hidden = true; return; }
     if (data?.action !== 'open' || !data.data) return;
     const d = data.data;
+    card.classList.toggle('taxi', d.plateStyle === 'taxi');
     text('plate', d.plate); text('owner', d.owner); text('brand', d.brandName);
     text('model', d.modelName); text('number', d.documentNumber || ('TS-' + String(d.documentId).padStart(7, '0')));
     text('validity', d.valid === false ? 'NIETIG VERKLAARD' : 'GELDIG');
