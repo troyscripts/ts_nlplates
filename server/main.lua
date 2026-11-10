@@ -1,5 +1,5 @@
 local resource = GetCurrentResourceName()
-local expectedConfig = '1.0.5'
+local expectedConfig = '1.0.6'
 local repository = 'https://github.com/troyscripts/ts_nlplates'
 local raw = 'https://raw.githubusercontent.com/troyscripts/ts_nlplates/'
 local busy = false

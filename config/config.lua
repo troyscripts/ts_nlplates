@@ -1,5 +1,5 @@
 Config = {}
-Config.Version = '1.0.5'
+Config.Version = '1.0.6'
 
 -- Een controle bij starten; handmatig vanuit console: ts_nlplates_check
 Config.VersionCheck = true
@@ -23,6 +23,8 @@ Config.DebugCommand = 'nlplaatinfo' -- false om uit te schakelen; alleen uitleze
 
 -- A = willekeurige letter; 1 = willekeurig cijfer. Maximaal 8 tekens incl. spaties.
 Config.PlateFormat = 'A 111 AA'
+-- Ook het standaard FiveM-spawnpatroon gebruiken. Expliciet ingestelde nummers blijven gelijk.
+Config.DefaultPlatePattern = true
 Config.NPCPlates = true
 Config.NPCScanInterval = 2000
 

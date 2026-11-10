@@ -1,3 +1,11 @@
+# 1.1.1 — Standaard spawnpatroon
+
+- Stelt het standaard FiveM-kentekenpatroon in op Config.PlateFormat.
+- Past dit opnieuw toe na ESX-initialisatie.
+- Geen hernummering van expliciet ingestelde of opgeslagen voertuigen.
+- Config 1.0.6: DefaultPlatePattern (standaard true).
+- JG-specifieke willekeurige nummers uit afgeschermde spawncode vallen hier niet onder.
+
 # 1.1.0 — 2026-11-07
 - Ingevulde Discord-webhook-URL verwijderd uit de openbare standaardconfig; stel deze lokaal in.
 - Code verdeeld over client/, server/, shared/ en config/; SQL naar sql/.
